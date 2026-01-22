@@ -308,11 +308,17 @@ class AdminManageEmployees(QWidget):
         # We stored the full database tuple (all 24 cols) in the first item's UserRole
         full_data = self.table.item(row, 0).data(Qt.UserRole)
 
-        if full_data:
-            dialog = EmployeeRecordDialog(full_data, self.db, self)
-            dialog.exec_()
-        else:
-            QMessageBox.critical(self, "Error", "Could not retrieve full employee data.")
+        dialog = EmployeeRecordDialog(full_data, self.db, self)
+        if dialog.exec_() == QDialog.Accepted:
+            self.load_data()
+
+        # if full_data:
+            
+            
+        # else:
+        #     QMessageBox.critical(self, "Error", "Could not retrieve full employee data.")
+
+
 
 # class AddEmployeeDialog(QDialog):
 #     def __init__(self, parent=None):

@@ -94,13 +94,13 @@ class DatabaseManager:
                 INSERT INTO employees (
                     Username, First_Name, Last_Name, Display_Name, Nick_Name, 
                     Age, Gender, Email, Address, Telephone, Cellphone, 
-                    Supervisor_ID, Employeement_Status, Hired, Employement_Type, Date_Hired, 
+                    Supervisor_id, Employeement_Status, Hired, Employement_Type, Date_Hired, 
                     Birthday, Date_Created, Date_Updated, Created_By, Updated_By, 
                     Dept_ID, Job_title_Id
                 ) VALUES (
                     :Username, :First_Name, :Last_Name, :Display_Name, :Nick_Name, 
                     :Age, :Gender, :Email, :Address, :Telephone, :Cellphone, 
-                    :Supervisor_ID, :Employeement_Status, :Hired, :Employement_Type, :Date_Hired, 
+                    :Supervisor_id, :Employeement_Status, :Hired, :Employement_Type, :Date_Hired, 
                     :Birthday, :Date_Created, :Date_Updated, :Created_By, :Updated_By, 
                     :Dept_ID, :Job_title_Id
                 )
@@ -161,6 +161,46 @@ class DatabaseManager:
             return None
         
 
+    def update_employee(self, username, ui_data):
+        try:
+            # This maps your UI labels (the keys in self.inputs) to DB columns
+            mapping = {
+                "Nickname": "Nick_Name",
+                "Age": "Age",
+                "Gender": "Gender",
+                "Birthday": "Birthday",
+                "Email": "Email",
+                "Cellphone": "Cellphone",
+                "Telephone": "Telephone",
+                "Address": "Address",
+                "Type": "Employement_Type",
+                "Date Hired": "Date_Hired",
+                "Hired Status": "Hired",
+                "Department ID": "Dept_ID",
+                "Job ID": "Job_title_Id",
+                "Supervisor ID": "Supervisor_id",
+                "Hired Status": "Employeement_Status"
+                
+            }
 
+            sets = []
+            params = {"target_user": username}
+            
+            for ui_key, value in ui_data.items():
+                if ui_key in mapping:
+                    db_column = mapping[ui_key]
+                    sets.append(f"{db_column} = :{db_column}")
+                    params[db_column] = value
 
-    
+            if not sets:
+                return False
+
+            # Build the dynamic SQL query
+            query = f"UPDATE employees SET {', '.join(sets)}, Date_Updated = datetime('now', 'localtime') WHERE Username = :target_user"
+            
+            self.cursor.execute(query, params)
+            self.conn.commit()
+            return self.cursor.rowcount > 0
+        except Exception as e:
+            print(f"Update Error: {e}")
+            return False

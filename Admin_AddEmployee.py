@@ -182,7 +182,7 @@ class AddEmployeeDialog(QDialog):
             "Username": "", "First_Name": "", "Last_Name": "", 
             "Display_Name": "", "Nick_name": "", "Age": "", "Gender": "", 
             "Email": "", "Address": "", "Telephone": "", "Cellphone": "",
-            "Supervisor_ID": "", "Employeement_Status": None, "Hired": None, 
+            "Supervisor_id": "", "Employeement_Status": None, "Hired": None, 
             "Employement_Type": "", "Date_Hired": "", "Birthday": "", 
             "Date_Created": "", "Date_Updated": "", "Created_By": "", "Updated_By": "",
             "Dept_ID": "", "Job_title_Id": ""
