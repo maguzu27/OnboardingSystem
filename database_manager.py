@@ -87,41 +87,27 @@ class DatabaseManager:
             print(f"Database Error: {e}")
             return False
         
-    def add_employee(self, data):
-        """
-        Expects 'data' to be a dictionary where keys match column names.
-        """
+    def add_employee(self, data_dict):
         try:
-            # SQL Query with all 23 columns (excluding auto-increment employee_id)
+            # Match these keys EXACTLY to the keys in your data_dict
             query = """
                 INSERT INTO employees (
-                    Username, First_Name, Last_Name, Display_Name, Nick_Name,
-                    Age, Gender, Email, Address, Telephone, Cellphone,
-                    Supervisor_id, Employeement_Status, Hired, Employement_Type,
-                    Date_Hired, Birthday, Date_Created, Date_Updated, 
-                    Created_By, Updated_By, Dept_ID, Job_title_Id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    Username, First_Name, Last_Name, Display_Name, Nick_Name, 
+                    Age, Gender, Email, Address, Telephone, Cellphone, 
+                    Supervisor_ID, Employeement_Status, Hired, Employement_Type, Date_Hired, 
+                    Birthday, Date_Created, Date_Updated, Created_By, Updated_By, 
+                    Dept_ID, Job_title_Id
+                ) VALUES (
+                    :Username, :First_Name, :Last_Name, :Display_Name, :Nick_Name, 
+                    :Age, :Gender, :Email, :Address, :Telephone, :Cellphone, 
+                    :Supervisor_ID, :Employeement_Status, :Hired, :Employement_Type, :Date_Hired, 
+                    :Birthday, :Date_Created, :Date_Updated, :Created_By, :Updated_By, 
+                    :Dept_ID, :Job_title_Id
+                )
             """
-            
-            # Extract values in the exact order of the columns above
-            # Using .get() prevents crashes if a key is missing
-            values = (
-                data.get("Username"), data.get("First_Name"), data.get("Last_Name"),
-                data.get("Display_Name"), data.get("Nick_Name"), data.get("Age"),
-                data.get("Gender"), data.get("Email"), data.get("Address"),
-                data.get("Telephone"), data.get("Cellphone"), data.get("Supervisor_id"),
-                data.get("Employeement_Status"), data.get("Hired"), data.get("Employement_Type"),
-                data.get("Date_Hired"), data.get("Birthday"), data.get("Date_Created"),
-                data.get("Date_Updated"), data.get("Created_By"), data.get("Updated_By"),
-                data.get("Dept_ID"), data.get("Job_title_Id")
-            )
-            
-            self.cursor.execute(query, values)
+            self.cursor.execute(query, data_dict)
             self.conn.commit()
             return True
-        except sqlite3.IntegrityError:
-            # This triggers if 'Username' (which is UNIQUE) already exists
-            return False
         except Exception as e:
             print(f"Database Error: {e}")
             return False

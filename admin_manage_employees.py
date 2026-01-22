@@ -10,93 +10,94 @@ from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt
 from Admin_AddEmployee import AddEmployeeDialog
 import os
+from Admin_OpenEmployee_Record import EmployeeRecordDialog
 
-class EmployeeRecordDialog(QDialog):
-    def __init__(self, employee_data, db, parent=None):
-        super().__init__(parent)
-        self.db = db
+# class EmployeeRecordDialog(QDialog):
+#     def __init__(self, employee_data, db, parent=None):
+#         super().__init__(parent)
+#         self.db = db
 
-        # Database index 1 is Username
-        self.username = employee_data[1]
-        self.setWindowTitle(f"Employee Record: {self.username}")
-        self.setMinimumWidth(500)
-        self.setMinimumHeight(600)
+#         # Database index 1 is Username
+#         self.username = employee_data[1]
+#         self.setWindowTitle(f"Employee Record: {self.username}")
+#         self.setMinimumWidth(500)
+#         self.setMinimumHeight(600)
 
-        # Get path from DB
-        self.file_path = self.db.get_employee_attachment(self.username)
-        self.init_ui(employee_data)
+#         # Get path from DB
+#         self.file_path = self.db.get_employee_attachment(self.username)
+#         self.init_ui(employee_data)
 
-    def init_ui(self, data):
-        # 1. Main layout for the entire Dialog
-        main_layout = QVBoxLayout(self)
+#     def init_ui(self, data):
+#         # 1. Main layout for the entire Dialog
+#         main_layout = QVBoxLayout(self)
 
-        # 2. Scroll Area for the 24 Data Fields
-        scroll = QScrollArea()
-        scroll_content = QWidget()
-        form_layout = QFormLayout(scroll_content)
+#         # 2. Scroll Area for the 24 Data Fields
+#         scroll = QScrollArea()
+#         scroll_content = QWidget()
+#         form_layout = QFormLayout(scroll_content)
 
-        labels = [
-            "ID", "Username", "First Name", "Last Name", "Display Name", "Nick Name",
-            "Age", "Gender", "Email", "Address", "Telephone", "Cellphone",
-            "Supervisor ID", "Status", "Hired", "Type", "Date Hired", 
-            "Birthday", "Created", "Updated", "Created By", "Updated By",
-            "Dept ID", "Job ID"
-        ]
+#         labels = [
+#             "ID", "Username", "First Name", "Last Name", "Display Name", "Nick Name",
+#             "Age", "Gender", "Email", "Address", "Telephone", "Cellphone",
+#             "Supervisor ID", "Status", "Hired", "Type", "Date Hired", 
+#             "Birthday", "Created", "Updated", "Created By", "Updated By",
+#             "Dept ID", "Job ID"
+#         ]
 
-        for i, label_text in enumerate(labels):
-            val = data[i] if i < len(data) else ""
-            form_layout.addRow(f"<b>{label_text}:</b>", QLabel(str(val)))
+#         for i, label_text in enumerate(labels):
+#             val = data[i] if i < len(data) else ""
+#             form_layout.addRow(f"<b>{label_text}:</b>", QLabel(str(val)))
 
-        # --- FILE STATUS LOGIC ---
-        has_file = False
-        if self.file_path and os.path.exists(self.file_path):
-            has_file = True
+#         # --- FILE STATUS LOGIC ---
+#         has_file = False
+#         if self.file_path and os.path.exists(self.file_path):
+#             has_file = True
 
-        status_text = "Exists" if has_file else "Not Found"
-        form_layout.addRow("<b>File Status:</b>", QLabel(status_text))
-        # -------------------------
+#         status_text = "Exists" if has_file else "Not Found"
+#         form_layout.addRow("<b>File Status:</b>", QLabel(status_text))
+#         # -------------------------
 
-        scroll.setWidget(scroll_content)
-        scroll.setWidgetResizable(True)
-        main_layout.addWidget(scroll) # Add scroll area to main layout
+#         scroll.setWidget(scroll_content)
+#         scroll.setWidgetResizable(True)
+#         main_layout.addWidget(scroll) # Add scroll area to main layout
 
-        # 3. Permanent Button Container at the Bottom
-        button_container = QVBoxLayout()
-        button_container.setContentsMargins(10, 10, 10, 10)
+#         # 3. Permanent Button Container at the Bottom
+#         button_container = QVBoxLayout()
+#         button_container.setContentsMargins(10, 10, 10, 10)
 
-        self.view_file_btn = QPushButton("View Attached Document")
-        self.view_file_btn.setStyleSheet("""
-            QPushButton { background-color: #3498db; color: white; padding: 10px; font-weight: bold; border-radius: 4px;}
-            QPushButton:hover { background-color: #2980b9; }
-            QPushButton:disabled { background-color: #bdc3c7; color: #7f8c8d; }
-        """)
+#         self.view_file_btn = QPushButton("View Attached Document")
+#         self.view_file_btn.setStyleSheet("""
+#             QPushButton { background-color: #3498db; color: white; padding: 10px; font-weight: bold; border-radius: 4px;}
+#             QPushButton:hover { background-color: #2980b9; }
+#             QPushButton:disabled { background-color: #bdc3c7; color: #7f8c8d; }
+#         """)
         
-        # Enable/Disable based on file existence
-        if not has_file:
-            self.view_file_btn.setEnabled(False)
-            self.view_file_btn.setText("No Document Attached")
-        else:
-            self.view_file_btn.setEnabled(True)
+#         # Enable/Disable based on file existence
+#         if not has_file:
+#             self.view_file_btn.setEnabled(False)
+#             self.view_file_btn.setText("No Document Attached")
+#         else:
+#             self.view_file_btn.setEnabled(True)
 
-        self.view_file_btn.clicked.connect(self.open_file)
+#         self.view_file_btn.clicked.connect(self.open_file)
 
-        close_btn = QPushButton("Close")
-        close_btn.setFixedHeight(35)
-        close_btn.clicked.connect(self.accept)
+#         close_btn = QPushButton("Close")
+#         close_btn.setFixedHeight(35)
+#         close_btn.clicked.connect(self.accept)
 
-        button_container.addWidget(self.view_file_btn)
-        button_container.addWidget(close_btn)
+#         button_container.addWidget(self.view_file_btn)
+#         button_container.addWidget(close_btn)
         
-        # Add the button container to the bottom of the main layout
-        main_layout.addLayout(button_container)
+#         # Add the button container to the bottom of the main layout
+#         main_layout.addLayout(button_container)
 
-    def open_file(self):
-        if self.file_path:
-            try:
-                # On Windows, this opens the file with the default app (PDF reader, etc.)
-                os.startfile(os.path.abspath(self.file_path))
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Could not open file: {e}")
+#     def open_file(self):
+#         if self.file_path:
+#             try:
+#                 # On Windows, this opens the file with the default app (PDF reader, etc.)
+#                 os.startfile(os.path.abspath(self.file_path))
+#             except Exception as e:
+#                 QMessageBox.critical(self, "Error", f"Could not open file: {e}")
 
 class AdminManageEmployees(QWidget):
     def __init__(self, db, logout_callback):
