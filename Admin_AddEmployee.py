@@ -4,8 +4,9 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, QDate
 
 class AddEmployeeDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, db, parent=None):
         super().__init__(parent)
+        self.db = db
         self.setWindowTitle("Register New Employee")
         self.resize(600, 700)
         
@@ -128,8 +129,36 @@ class AddEmployeeDialog(QDialog):
             lbl.setStyleSheet("font-weight: bold; color: #34495e; font-size: 13px;")
             layout.addWidget(lbl, i, 0)
 
+
+            if key in ["Supervisor_ID", "Dept_ID", "Job_title_Id"]:
+                input_field = QComboBox()
+                input_field.setStyleSheet(widget_style)
+                input_field.setFixedHeight(40)
+                
+                if key == "Supervisor_ID":
+                    input_field.addItem("None", None)
+                    data = self.db.get_supervisor_lookup() # Fetch [(id, name), ...]
+                    for s_id, s_name in data:
+                        input_field.addItem(s_name, s_id)
+                
+                elif key == "Dept_ID":
+                    input_field.addItem("Select Department", None)
+                    data = self.db.get_department_lookup()
+                    for d_id, d_name in data:
+                        input_field.addItem(d_name, d_id)
+                
+                elif key == "Job_title_Id":
+                    input_field.addItem("Select Job Title", None)
+                    # Use your existing get_master_data for Jobs
+                    data = self.db.get_master_data("Jobs")
+                    for j_id, title, desc, *args in data:
+                        input_field.addItem(title, j_id)
+
+                self.inputs[key] = input_field
+
+
             # Logic to create a Dropdown for Employment Type
-            if key == "Employement_Type":
+            elif key == "Employement_Type":
                 input_field = QComboBox()
                 input_field.addItems(["Salary", "Hourly", "Contractual", "Seasonal", "Student"])
                 input_field.setStyleSheet(widget_style)
@@ -171,7 +200,13 @@ class AddEmployeeDialog(QDialog):
         user_input = {}
         for key, widget in self.inputs.items():
             if isinstance(widget, QComboBox):
-                user_input[key] = widget.currentText()
+                # Use hidden ID for database foreign keys, text for others
+                if key in ["Supervisor_ID", "Dept_ID", "Job_title_Id"]:
+                    user_input[key] = widget.currentData()
+                else:
+                    user_input[key] = widget.currentText()
+
+                
             elif isinstance(widget, QDateEdit):
                 # Formats the date as a string for SQLite
                 user_input[key] = widget.date().toString("yyyy-MM-dd")

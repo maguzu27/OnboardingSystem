@@ -7,10 +7,11 @@ import os
 from database_manager import DatabaseManager
 
 class EmployeeRecordDialog(QDialog):
-    def __init__(self, employee_data, db, parent=None):
+    def __init__(self, employee_data, db, current_admin, parent=None):
         super().__init__(parent)
         self.db = db
         self.inputs = {}
+        self.current_admin = current_admin
         self.employee_id = employee_data[0]   # Employee ID at index 0
         self.username = employee_data[1]  # Username at index 1
         self.file_path = self.db.get_employee_attachment(self.username)
@@ -29,6 +30,7 @@ class EmployeeRecordDialog(QDialog):
         self.set_edit_mode(False)
 
     def init_ui(self, data):
+
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
 
@@ -71,7 +73,8 @@ class EmployeeRecordDialog(QDialog):
         
         # Tab 1: Personal Info
         personal_tab = self.create_form_tab([
-            ("Nickname", data[5]), ("Age", data[6]), ("Gender", data[7]), 
+            ("First Name", data[2]),  ("Last Name", data[3]), ("Nickname", data[5]), ("Display Name", data[4]),
+            ("Age", data[6]), ("Gender", data[7]), 
             ("Birthday", data[17]), ("Email", data[8]), ("Cellphone", data[11]),
             ("Telephone", data[10]), ("Address", data[9])
         ])
@@ -275,8 +278,7 @@ class EmployeeRecordDialog(QDialog):
             else:
                 updated_data[key] = widget.text()
 
-        success = self.db.update_employee(self.username, updated_data)
-
+        success = self.db.update_employee(self.username, updated_data, self.current_admin)
 
         if success:
             self.refresh_ui()
@@ -343,7 +345,10 @@ class EmployeeRecordDialog(QDialog):
                 "Nickname": fresh_data[5], "Age": fresh_data[6], "Gender": fresh_data[7], 
                 "Birthday": fresh_data[17], "Email": fresh_data[8], "Cellphone": fresh_data[11],
                 "Telephone": fresh_data[10], "Address": fresh_data[9],
-                "Type": fresh_data[15], "Date Hired": fresh_data[16], "Hired Status": fresh_data[14]
+                "Type": fresh_data[15], "Date Hired": fresh_data[16], "Hired Status": fresh_data[14],
+                "Department ID": fresh_data[22], "Job ID": fresh_data[23], "Supervisor ID": fresh_data[12],
+                "Created By": fresh_data[20], "Created Date": fresh_data[18], "Updated By": fresh_data[21], "Updated Date": fresh_data[19],
+                "First Name": fresh_data[2], "Last Name": fresh_data[3], "Display Name": fresh_data[4]
             }
 
             for key, val in mapping.items():

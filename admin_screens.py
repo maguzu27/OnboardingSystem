@@ -4,7 +4,9 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QGridLayout, QMessageBox)
 from PyQt5.QtCore import Qt, QTimer, QDateTime, QSize
 import webbrowser
-
+from PyQt5.QtWidgets import QDialog, QFormLayout
+from admin_master_table_manager import MasterTableManager
+from admin_requirements_setup_manager import RequirementsSetupManager
 
 class AdminHome(QWidget):
     def __init__(self, admin_name, nav_to_manage, logout_callback):
@@ -42,9 +44,9 @@ class AdminHome(QWidget):
 
         # 1. Define the 'buttons' list inside this method
         buttons = [
-            ("Manage Employees", QStyle.SP_FileDialogContentsView, self.nav_to_manage),
-            ("Job Roles", QStyle.SP_DirHomeIcon, lambda: self.msg("Job Roles")),
-            ("Job Requirements", QStyle.SP_FileDialogDetailedView, lambda: self.msg("Requirements")),
+            ("Manage Employees", QStyle.SP_FileDialogContentsView, lambda: self.nav_to_manage()),
+            ("Setup Master Tables", QStyle.SP_DirHomeIcon, lambda: self.nav_to_manage(MasterTableManager)),
+            ("Job Requirements", QStyle.SP_FileDialogDetailedView, lambda: self.nav_to_manage(RequirementsSetupManager)),
             ("Alerts", QStyle.SP_MessageBoxWarning, lambda: self.msg("Alerts"))
         ]
 
@@ -96,7 +98,20 @@ class AdminHome(QWidget):
 
     def msg(self, feature):
         QMessageBox.information(self, "Coming Soon", f"The {feature} management feature is under development.")
-            
+
+    def nav_to_master_data(self):
+        self.nav_to_manage(MasterTableManager)
+        # This assumes your main window has a method to switch to this new view
+        # Similar to how nav_to_manage works
+        # if hasattr(self, 'parent') and hasattr(self.parent(), 'switch_to_master_data'):
+        #     self.parent().switch_to_master_data()
+        # else:
+        #     # Fallback if navigation isn't set up in main.py yet
+        #     from MasterTableManager import MasterTableManager
+        #     self.master_win = MasterTableManager(self.db, self.admin_name, self.show)
+        #     self.master_win.show()
+        #     self.hide()
+           
 # class AdminDashboard(QWidget):
 #     def __init__(self, db, logout_callback):
 #         super().__init__()
