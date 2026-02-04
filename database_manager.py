@@ -395,7 +395,7 @@ class DatabaseManager:
             Req_id INTEGER,
             Req_line_id INTEGER,
             Req_Name TEXT,
-            Req_code TEXT,s
+            Req_code TEXT,
             Req_Item_Type TEXT,
             Req_Description TEXT,
             PRIMARY KEY (Req_id, Req_line_id),

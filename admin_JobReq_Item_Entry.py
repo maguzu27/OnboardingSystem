@@ -1,9 +1,12 @@
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QPushButton, QComboBox, QFormLayout, QFrame)
 
+from Admin_DuplicateJobReq_Items_Dialog import DuplicateSearchDialog
+
 class AddRequirementItemDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, db, parent=None):
         super().__init__(parent)
+        self.db = db
         self.setWindowTitle("Add Requirement Item")
         self.setMinimumWidth(450)
         self.setStyleSheet("""
@@ -19,6 +22,19 @@ class AddRequirementItemDialog(QDialog):
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+
+        action_layout = QHBoxLayout()
+        duplicate_btn = QPushButton("📋 Duplicate Existing")
+        duplicate_btn.setFixedWidth(150)
+        duplicate_btn.setStyleSheet("""
+            QPushButton { background-color: #f39c12; color: white; border-radius: 4px; padding: 5px; }
+            QPushButton:hover { background-color: #e67e22; }
+        """)
+
+        duplicate_btn.clicked.connect(self.open_duplicate_search)
+        action_layout.addWidget(duplicate_btn)
+        action_layout.addStretch()
+        layout.addLayout(action_layout)
         
         header = QLabel("New Item Details")
         header.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;")
@@ -67,3 +83,20 @@ class AddRequirementItemDialog(QDialog):
             "type": self.type_combo.currentText(),
             "desc": self.desc_input.text()
         }
+    
+    def open_duplicate_search(self):
+        print(f"DEBUG: self.db is {self.db}")
+        
+        search_dlg = DuplicateSearchDialog(self.db, self)
+        if search_dlg.exec_() == QDialog.Accepted:
+            data = search_dlg.selected_data
+            if data:
+                # Filling the details into the current screen
+                self.name_input.setText(data['name'])
+                self.code_input.setText(data['code'])
+                self.desc_input.setText(data['desc'])
+                
+                # Find index of the duplicated type in combo
+                index = self.type_combo.findText(data['type'])
+                if index >= 0:
+                    self.type_combo.setCurrentIndex(index)

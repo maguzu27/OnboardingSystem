@@ -27,6 +27,26 @@ class RequirementItemsEditor(QDialog):
         header_layout = QHBoxLayout()
         title_lbl = QLabel(f"<h2>Requirement Items</h2>")
         
+
+        # NEW: DUPLICATE BUTTON
+        self.duplicate_btn = QPushButton("📋 Duplicate Existing")
+        self.duplicate_btn.setFixedWidth(160)
+        self.duplicate_btn.setStyleSheet("""
+            QPushButton { 
+                background-color: #f39c12; 
+                color: white; 
+                font-weight: bold; 
+                padding: 6px; 
+                border-radius: 4px; 
+                margin-left: 15px;
+            }
+            QPushButton:hover { background-color: #e67e22; }
+        """)
+        self.duplicate_btn.clicked.connect(self.open_duplicate_search)
+        header_layout.addWidget(self.duplicate_btn)
+
+        header_layout.addStretch()
+
         back_btn = QPushButton("Back")
         back_btn.setFixedWidth(80)
         # self.reject() closes the dialog and returns 0 (Cancel)
@@ -35,6 +55,7 @@ class RequirementItemsEditor(QDialog):
         header_layout.addWidget(title_lbl)
         header_layout.addStretch()
         header_layout.addWidget(back_btn)
+
         layout.addLayout(header_layout)
 
         # --- TABLE ---
@@ -67,7 +88,7 @@ class RequirementItemsEditor(QDialog):
 
     def add_line(self):
         # 1. Open the new professional dialog
-        dialog = AddRequirementItemDialog(self)
+        dialog = AddRequirementItemDialog(self.db, self)
         
         if dialog.exec_() == QDialog.Accepted:
             data = dialog.get_data()
@@ -94,3 +115,28 @@ class RequirementItemsEditor(QDialog):
                 self.load_items()
             else:
                 QMessageBox.critical(self, "Database Error", "Could not save the requirement item.")
+    
+    def open_duplicate_search(self):
+        from Admin_DuplicateJobReq_Items_Dialog import DuplicateSearchDialog
+        
+        search_dlg = DuplicateSearchDialog(self.db, self)
+        if search_dlg.exec_() == QDialog.Accepted:
+            data = search_dlg.selected_data
+            if data:
+                # 1. Calculate the next Line ID for this specific group
+                next_line = self.table.rowCount() + 1
+                
+                # 2. Save duplicated item to database
+                success = self.db.add_requirement_item(
+                    self.req_id, 
+                    next_line, 
+                    data['name'], 
+                    data['code'], 
+                    data['type'], 
+                    data['desc']
+                )
+                
+                if success:
+                    self.load_items() # Refresh table
+                else:
+                    QMessageBox.critical(self, "Error", "Failed to duplicate item.")

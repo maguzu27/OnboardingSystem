@@ -192,11 +192,31 @@ class EditRequirementFullDialog(QDialog):
         self.items_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         layout.addWidget(self.items_table)
 
+        item_btn_layout = QHBoxLayout()
+
         # Add Line Button for convenience
         add_line_btn = QPushButton("+ Add New Row")
         add_line_btn.setFixedWidth(120)
         add_line_btn.clicked.connect(self.add_blank_row)
         layout.addWidget(add_line_btn)
+
+
+        duplicate_btn = QPushButton("📋 Duplicate Existing")
+        duplicate_btn.setFixedWidth(150)
+        duplicate_btn.setStyleSheet("""
+            QPushButton { 
+                background-color: #f39c12; 
+                color: white; 
+                font-weight: bold; 
+            }
+            QPushButton:hover { background-color: #e67e22; }
+        """)
+        duplicate_btn.clicked.connect(self.open_duplicate_search)
+        
+        item_btn_layout.addWidget(add_line_btn)
+        item_btn_layout.addWidget(duplicate_btn)
+        item_btn_layout.addStretch() # Pushes buttons to the left
+        layout.addLayout(item_btn_layout)
 
         # --- FOOTER ---
         btns = QHBoxLayout()
@@ -213,6 +233,24 @@ class EditRequirementFullDialog(QDialog):
         layout.addLayout(btns)
 
         self.load_items_to_table()
+
+    def open_duplicate_search(self):
+        # Local import to prevent circular dependency
+        from Admin_DuplicateJobReq_Items_Dialog import DuplicateSearchDialog
+        
+        search_dlg = DuplicateSearchDialog(self.db, self)
+        if search_dlg.exec_() == QDialog.Accepted:
+            data = search_dlg.selected_data
+            if data:
+                # Add to UI table so user can see/edit it before saving
+                row_pos = self.items_table.rowCount()
+                self.items_table.insertRow(row_pos)
+                
+                self.items_table.setItem(row_pos, 0, QTableWidgetItem(str(row_pos + 1)))
+                self.items_table.setItem(row_pos, 1, QTableWidgetItem(str(data.get('name', ''))))
+                self.items_table.setItem(row_pos, 2, QTableWidgetItem(str(data.get('code', ''))))
+                self.items_table.setItem(row_pos, 3, QTableWidgetItem(str(data.get('type', ''))))
+                self.items_table.setItem(row_pos, 4, QTableWidgetItem(str(data.get('desc', ''))))
 
     def load_items_to_table(self):
         items = self.db.get_items_by_requirement(self.req_id)
