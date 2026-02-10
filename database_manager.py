@@ -10,6 +10,9 @@ class DatabaseManager:
         self.create_employee_requirement_attach_table()
         self.create_requirements_setup_table()
         self.create_requirements_items_table()
+        self.create_jobs_master_table()
+        self.create_departments_master_table()
+        self.create_employee_requirements_table()
 
     def create_employees_table(self):
         query = """
@@ -37,7 +40,9 @@ class DatabaseManager:
             Created_By TEXT,
             Updated_By TEXT,
             Dept_ID INTEGER,
-            Job_title_Id INTEGER
+            Job_title_Id INTEGER,
+            Req_Group_Name TEXT NOT NULL,
+            FOREIGN KEY (Req_Group_Name) REFERENCES requirements_setup (Req_Group_Name)
         )
         """
         self.cursor.execute(query)
@@ -47,6 +52,7 @@ class DatabaseManager:
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS Requirement_Attachments (
                 Attachment_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                Employee_Req_ID INTEGER NOT NULL,
                 Employee_Name TEXT, --username
                 File_path TEXT UNIQUE,
                 File_name Text,
@@ -57,7 +63,8 @@ class DatabaseManager:
                 Updated_By TEXT DEFAULT NULL,
                 Date_Updated DATE DEFAULT NULL,
                 File_Size INTEGER,
-                Scan_Status TEXT                                   
+                Scan_Status TEXT,
+                FOREIGN KEY (Employee_Req_ID) REFERENCES Employee_Requirements(Employee_Req_ID) ON DELETE CASCADE                                  
             )
         """)
         self.conn.commit()
@@ -150,13 +157,13 @@ class DatabaseManager:
             print(f"Delete Error: {e}")
             return False
         
-    def add_attachment(self, file_path, file_name, original_name, username, file_size):
+    def add_attachment(self, file_path, file_name, original_name, username, file_size, employee_req_id):
         try:
             # We must match the number of columns to the number of ? and the number of values
             query = """
                 INSERT INTO Requirement_Attachments 
-                (Employee_Name, File_path, File_name, Original_File_name, Created_By, Uploaded_By, File_Size, Scan_Status) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (Employee_Name, File_path, File_name, Original_File_name, Created_By, Uploaded_By, File_Size, Scan_Status, Employee_Req_ID) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
             
             # 8 Columns = 8 Values
@@ -168,7 +175,8 @@ class DatabaseManager:
                 username,       # Created_By
                 username,       # Uploaded_By
                 file_size,      # File_Size
-                "Clean"         # Scan_Status
+                "Clean",         # Scan_Status
+                employee_req_id  # Employee_Req_ID (foreign key to link to the specific requirement)
             )
             
             self.cursor.execute(query, values)
@@ -252,9 +260,13 @@ class DatabaseManager:
             return None
         
     def get_master_data(self, table_type):
-        # Dynamic table selection (be careful with table_type sanitization)
         table_name = "Jobs" if table_type == "Jobs" else "Departments"
         self.cursor.execute(f"SELECT * FROM {table_name}")
+        return self.cursor.fetchall()
+    
+    def get_job_req_group_data(self):
+        table_name = "requirements_setup"
+        self.cursor.execute(f"SELECT req_group_name FROM {table_name}")
         return self.cursor.fetchall()
 
     def delete_master_record(self, table_type, record_id):
@@ -447,4 +459,97 @@ class DatabaseManager:
         except Exception as e:
             print(f"Transaction Error: {e}")
             self.conn.rollback()
+            return False
+        
+    def create_employee_requirements_table(self):
+        query = """
+        CREATE TABLE IF NOT EXISTS Employee_Requirements (
+            Employee_Req_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Employee_id INTEGER NOT NULL,
+            Req_id INTEGER NOT NULL,
+            Req_line_id INTEGER NOT NULL,
+            Requirement_Status TEXT,
+            Created_By TEXT,
+            Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            Updated_By TEXT,
+            Date_Updated DATETIME,
+            Requirement_Due_Date DATETIME,
+            Requirement_Completion_Date DATETIME,
+            FOREIGN KEY (Employee_id) REFERENCES Employees(Employee_id),
+            FOREIGN KEY (Req_id, Req_line_id) REFERENCES Requirements_Setup_Items(Req_id, Req_line_id),
+            UNIQUE(Employee_id, Req_id, Req_line_id)
+        )
+        """
+        self.cursor.execute(query)
+        self.conn.commit()
+
+    def add_employee_with_requirements(self, emp_data):
+        """
+        Inserts a new employee and automatically clones requirement items 
+        into the Employee_Requirements table.
+        """
+        try:
+            cursor = self.conn.cursor()
+            
+            # 1. Insert the Employee record
+            # Note: Ensure the keys in emp_data match your table columns exactly
+            columns = ', '.join(emp_data.keys())
+            placeholders = ', '.join(['?'] * len(emp_data))
+            sql_emp = f"INSERT INTO employees ({columns}) VALUES ({placeholders})"
+            
+            cursor.execute(sql_emp, list(emp_data.values()))
+            new_emp_id = cursor.lastrowid  # Get the ID of the employee we just created
+
+            # 2. Check if a Requirement Group was selected
+            group_name = emp_data.get("Req_Group_Name")
+            job_id = emp_data.get("Job_title_Id")
+
+            if group_name and group_name != "No Requirement Group":
+                # Find the Req_id for this group name
+                cursor.execute("SELECT Req_id FROM Requirements_Setup WHERE Req_Group_Name = ? and Job_ID = ?", (group_name, job_id))
+                res = cursor.fetchone()
+                
+                if res:
+                    req_id = res[0]
+                    
+                    # 3. Fetch all items associated with that group
+                    cursor.execute("""
+                        SELECT Req_id, Req_line_id 
+                        FROM Requirements_Setup_Items 
+                        WHERE Req_id = ?
+                    """, (req_id,))
+                    items = cursor.fetchall()
+                    
+                    # 4. Insert each item into Employee_Requirements
+                    for r_id, line_id in items:
+                        cursor.execute("""
+                            INSERT INTO Employee_Requirements (
+                                Employee_id, Req_id, Req_line_id, Requirement_Status, Created_By
+                            ) VALUES (?, ?, ?, ?, ?)
+                        """, (new_emp_id, r_id, line_id, 'Pending', emp_data.get('Created_By')))
+            
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error in transaction: {e}")
+            self.conn.rollback()
+            return False
+        
+    def execute_query(self, query, params=None):
+        """A helper to fetch all rows for a given query and parameters."""
+        cursor = self.conn.cursor()
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        return cursor.fetchall()
+    
+    def delete_employee_requirement(self, record_id):
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("DELETE FROM Employee_Requirements WHERE Employee_Req_ID = ?", (record_id,))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Delete Error: {e}")
             return False

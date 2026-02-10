@@ -56,9 +56,10 @@ class AddEmployeeDialog(QDialog):
 
         # Tab 2: Employment Details
         self.tabs.addTab(self.create_input_tab([
-            ("Supervisor_ID", "Supervisor ID", ""),
+            ("Supervisor_id", "Supervisor ID", ""),
             ("Dept_ID", "Department ID", ""),
             ("Job_title_Id", "Job ID", ""),
+            ("Req_Group_Name", "Requirement Group", ""),
             ("Employement_Type", "Employment Type", "e.g. Full-time, Contract"),
             ("Date_Hired", "Date Hired", "YYYY-MM-DD"),
             ("Employeement_Status", "Employment Status", "e.g. Active, Probation")
@@ -130,12 +131,12 @@ class AddEmployeeDialog(QDialog):
             layout.addWidget(lbl, i, 0)
 
 
-            if key in ["Supervisor_ID", "Dept_ID", "Job_title_Id"]:
+            if key in ["Supervisor_id", "Dept_ID", "Job_title_Id", "Req_Group_Name"]:
                 input_field = QComboBox()
                 input_field.setStyleSheet(widget_style)
                 input_field.setFixedHeight(40)
                 
-                if key == "Supervisor_ID":
+                if key == "Supervisor_id":
                     input_field.addItem("None", None)
                     data = self.db.get_supervisor_lookup() # Fetch [(id, name), ...]
                     for s_id, s_name in data:
@@ -149,10 +150,16 @@ class AddEmployeeDialog(QDialog):
                 
                 elif key == "Job_title_Id":
                     input_field.addItem("Select Job Title", None)
-                    # Use your existing get_master_data for Jobs
                     data = self.db.get_master_data("Jobs")
                     for j_id, title, desc, *args in data:
                         input_field.addItem(title, j_id)
+
+                elif key == "Req_Group_Name":
+                    input_field.addItem("Select Requirement Group", None)
+                    data = self.db.get_job_req_group_data()
+                    for r_name in data:
+                        group_name = str(r_name[0])
+                        input_field.addItem(group_name, group_name)
 
                 self.inputs[key] = input_field
 
@@ -201,7 +208,7 @@ class AddEmployeeDialog(QDialog):
         for key, widget in self.inputs.items():
             if isinstance(widget, QComboBox):
                 # Use hidden ID for database foreign keys, text for others
-                if key in ["Supervisor_ID", "Dept_ID", "Job_title_Id"]:
+                if key in ["Supervisor_id", "Dept_ID", "Job_title_Id"]:
                     user_input[key] = widget.currentData()
                 else:
                     user_input[key] = widget.currentText()
@@ -220,7 +227,7 @@ class AddEmployeeDialog(QDialog):
             "Supervisor_id": "", "Employeement_Status": None, "Hired": None, 
             "Employement_Type": "", "Date_Hired": "", "Birthday": "", 
             "Date_Created": "", "Date_Updated": "", "Created_By": "", "Updated_By": "",
-            "Dept_ID": "", "Job_title_Id": ""
+            "Dept_ID": "", "Job_title_Id": "", "Req_Group_Name": ""
         }
         full_employee_data.update(user_input)
         return full_employee_data

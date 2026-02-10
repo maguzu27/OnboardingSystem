@@ -126,13 +126,15 @@ class AdminManageEmployees(QWidget):
             # name, email, edu, job, superv = dialog.get_data()
             employee_data = dialog.get_data()
 
+            success = self.db.add_employee_with_requirements(employee_data)
+
             # Check if fields are empty
             if not employee_data.get("Username") or not employee_data.get("Email"):
                 QMessageBox.warning(self, "Input Error", "Username and Email are required.")
                 return
 
             # Add to Database
-            if self.db.add_employee(employee_data):
+            if success:
                 self.load_data()
                 QMessageBox.information(self, "Success", f"Employee {employee_data['Username']} added!")
             else:

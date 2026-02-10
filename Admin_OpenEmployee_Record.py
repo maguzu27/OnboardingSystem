@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import Qt, QDate
 import os
-from database_manager import DatabaseManager
+from Admin_EmployeeRequirements_Manager import EmployeeRequirementsScreen 
 
 class EmployeeRecordDialog(QDialog):
     def __init__(self, employee_data, db, current_admin, parent=None):
@@ -107,19 +107,23 @@ class EmployeeRecordDialog(QDialog):
         # --- FOOTER / ACTIONS ---
         footer_layout = QHBoxLayout()
         
-        has_file = bool(self.file_path and os.path.exists(self.file_path))
-        self.view_file_btn = QPushButton(" View Document")
+        # has_file = bool(self.file_path and os.path.exists(self.file_path))
+
+        self.view_file_btn = QPushButton("View Job Requirements")
         self.view_file_btn.setFixedHeight(40)
         btn_style = "background-color: #3498db; color: white; font-weight: bold; border-radius: 5px; padding: 0 15px;"
-        if not has_file:
-            btn_style = "background-color: #bdc3c7; color: #ffffff; border-radius: 5px;"
-            self.view_file_btn.setEnabled(False)
-            self.view_file_btn.setText("No Attachment")
+
+
+
+        # if not has_file:
+        #     btn_style = "background-color: #bdc3c7; color: #ffffff; border-radius: 5px;"
+        #     self.view_file_btn.setEnabled(False)
+        #     self.view_file_btn.setText("No Attachment")
 
             
             
         self.view_file_btn.setStyleSheet(btn_style)
-        self.view_file_btn.clicked.connect(self.open_file)
+        self.view_file_btn.clicked.connect(self.open_job_requirements_screen)
 
         close_btn = QPushButton("Dismiss")
         close_btn.setFixedHeight(40)
@@ -213,13 +217,21 @@ class EmployeeRecordDialog(QDialog):
         scroll.setWidgetResizable(True)
         scroll.setWidget(widget)
         return scroll
+    
+    def open_job_requirements_screen(self):
+        dialog = EmployeeRequirementsScreen(
+        self.db, 
+        self.employee_id,
+        self.username
+        )
+        dialog.exec_()
 
-    def open_file(self):
-        if self.file_path:
-            try:
-                os.startfile(os.path.abspath(self.file_path))
-            except Exception as e:
-                print(f"Error: {e}")
+    # def open_file(self):
+    #     if self.file_path:
+    #         try:
+    #             os.startfile(os.path.abspath(self.file_path))
+    #         except Exception as e:
+    #             print(f"Error: {e}")
 
     def set_edit_mode(self, enabled):
         """Toggles the UI appearance between Viewing and Editing for all widget types"""
