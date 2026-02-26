@@ -553,3 +553,15 @@ class DatabaseManager:
         except Exception as e:
             print(f"Delete Error: {e}")
             return False
+        
+    def execute_non_query(self, query, params=()):
+        """Executes a query that doesn't return data (Update, Insert, Delete)."""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(query, params)
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Database Error: {e}")
+            self.conn.rollback()
+            return False
