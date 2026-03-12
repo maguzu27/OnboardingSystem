@@ -6,9 +6,11 @@ from database_manager import DatabaseManager
 from login_window import LoginWindow
 from admin_screens import AdminHome
 from employee_dashboard import EmployeeDashboard
-from admin_manage_employees import AdminManageEmployees
-from admin_master_table_manager import MasterTableManager
-from admin_requirements_setup_manager import RequirementsSetupManager
+from Admin_Page.Manage_Employees.admin_manage_employees import AdminManageEmployees
+from Admin_Page.Master_Tables_Setup.admin_master_table_manager import MasterTableManager
+from Admin_Page.Job_Requirements.admin_requirements_setup_manager import RequirementsSetupManager
+from Admin_Page.Setup_Alerts.Admin_Setup_Alerts_Manager import AlertsSetupManager
+
 
 class MainApp(QStackedWidget):
     def __init__(self):
@@ -27,6 +29,7 @@ class MainApp(QStackedWidget):
         self.employee_page = EmployeeDashboard(self.db, self.show_login)
         self.master_table_page = MasterTableManager(self.db, self.admin_name, self.go_to_admin_home)
         self.admin_requirements_page = RequirementsSetupManager(self.db, self.admin_name, self.go_to_admin_home)
+        self.admin_alerts_page = AlertsSetupManager(self.db, self.admin_name, self.go_to_admin_home)
 
         
         self.addWidget(self.login_page)       # 0
@@ -35,6 +38,7 @@ class MainApp(QStackedWidget):
         self.addWidget(self.employee_page)    # 3
         self.addWidget(self.master_table_page) #4
         self.addWidget(self.admin_requirements_page) #5
+        self.addWidget(self.admin_alerts_page) #6
         
         self.setWindowTitle("Corporate Onboarding System")
         self.resize(1000, 700)
@@ -56,6 +60,9 @@ class MainApp(QStackedWidget):
         elif screen_class == RequirementsSetupManager:
             self.admin_requirements_page.load_data()
             self.setCurrentIndex(5)
+        elif screen_class == AlertsSetupManager:
+            self.admin_alerts_page.load_data()
+            self.setCurrentIndex(6)
         else:
             # Default behavior for "Manage Employees"
             self.admin_manage_page.load_data()

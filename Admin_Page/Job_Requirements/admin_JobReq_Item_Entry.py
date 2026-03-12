@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QPushButton, QComboBox, QFormLayout, QFrame)
 
-from Admin_DuplicateJobReq_Items_Dialog import DuplicateSearchDialog
+from Admin_Page.Job_Requirements.Admin_DuplicateJobReq_Items_Dialog import DuplicateSearchDialog
 
 class AddRequirementItemDialog(QDialog):
     def __init__(self, db, parent=None):

@@ -13,6 +13,8 @@ class DatabaseManager:
         self.create_jobs_master_table()
         self.create_departments_master_table()
         self.create_employee_requirements_table()
+        self.create_alert_dashboard_items_table()
+        self.create_alert_items_table()
 
     def create_employees_table(self):
         query = """
@@ -564,4 +566,197 @@ class DatabaseManager:
         except Exception as e:
             print(f"Database Error: {e}")
             self.conn.rollback()
+            return False
+        
+    def create_alert_dashboard_items_table(self):
+        query = """
+        CREATE TABLE IF NOT EXISTS Alert_Dashboard_Items (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Alert_Name TEXT,
+            Alert_Code TEXT,
+            Alert_Type TEXT,
+            Alert_Description TEXT,
+            Alert_Trigger_Date DATETIME,
+            Alert_Status TEXT,
+            Alert_Acknowledged_By TEXT,
+            Alert_Acknowledged_Date DATETIME,
+            Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            Created_By TEXT,
+            Updated_By TEXT,
+            Date_Updated DATETIME
+        )
+        """
+        self.cursor.execute(query)
+        self.conn.commit()
+
+    def create_alert_items_table(self):
+        query = """
+        CREATE TABLE IF NOT EXISTS Alert_Items (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Alert_Name TEXT,
+            Employee_Record_Created BOOLEAN,
+            Employee_Record_Deleted BOOLEAN,
+            Employee_Record_Updated BOOLEAN,
+            Employee_Updated_JobRqrmt BOOLEAN,
+            Employee_Updated_TrainingRqrmt BOOLEAN,
+            JobRqrmt_Due_date_X_Days INTEGER,
+            JobRqrmt_Due_date_Today BOOLEAN,
+            Alert_Email_Recipient TEXT,
+            Alert_Username_Recipient TEXT,
+            Attach_File BOOLEAN,
+            Details_In_Body BOOLEAN,
+            App_Home_Notification BOOLEAN,
+            Alert_Start_Date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            Alert_End_Date DATETIME DEFAULT NULL,
+            Attribute_1 TEXT,
+            Condition_1 TEXT,
+            Attribute_2 TEXT,
+            Condition_2 TEXT,
+            Attribute_3 TEXT,
+            Condition_3 TEXT,
+            Attribute_4 TEXT,
+            Condition_4 TEXT,
+            Attribute_5 TEXT,
+            Condition_5 TEXT,
+            Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            Created_By TEXT,
+            Updated_By TEXT,
+            Date_Updated DATETIME
+        )
+        """
+        self.cursor.execute(query)
+        self.conn.commit()
+
+    def get_all_alert_dashboard_items(self):
+        # Explicitly define the order to match your UI mapping
+        query = """
+            SELECT ID, Alert_Name, Alert_Code, Alert_Type, Alert_Description, 
+                Alert_Status, Alert_Trigger_Date, Alert_Acknowledged_By, Alert_Acknowledged_Date
+            FROM Alert_Dashboard_Items
+        """
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Database Error: {e}")
+            return []
+        
+
+    def add_alert_item(self, data_tuple):
+        print(f"Adding alert with data: {data_tuple}")  # Debug statement to check the input data
+        query = """
+        INSERT INTO Alert_Items (
+            Alert_Name, Employee_Record_Created, Employee_Record_Deleted, Employee_Record_Updated,
+            Employee_Updated_JobRqrmt, Employee_Updated_TrainingRqrmt, JobRqrmt_Due_date_X_Days,
+            JobRqrmt_Due_date_Today, Alert_Email_Recipient, Alert_Username_Recipient,
+            Attach_File, Details_In_Body, App_Home_Notification, Created_By,
+            Attribute_1, Condition_1, Attribute_2, Condition_2, Attribute_3, Condition_3,
+            Attribute_4, Condition_4, Attribute_5, Condition_5
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) 
+        """ # Ensure there are 24 question marks here
+        return self.execute_non_query(query, data_tuple)
+    
+    def get_all_alert_setup_items(self):
+        # Explicitly define the order to match your UI mapping
+        query = """
+            SELECT ID, Alert_Name, Date_Created, Created_By, Updated_By, Date_Updated
+            FROM Alert_Items
+        """
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Database Error: {e}")
+            return []
+        
+    def get_alert_by_id(self, alert_id):
+        query = """
+            SELECT
+                ID,
+                Alert_Name,
+                Employee_Record_Created,
+                Employee_Record_Deleted,
+                Employee_Record_Updated,
+                Employee_Updated_JobRqrmt,
+                Employee_Updated_TrainingRqrmt,
+                JobRqrmt_Due_date_X_Days,
+                JobRqrmt_Due_date_Today,
+                Alert_Email_Recipient,
+                Alert_Username_Recipient,
+                Attach_File,
+                Details_In_Body,
+                App_Home_Notification,
+                Attribute_1,
+                Condition_1,
+                Attribute_2,
+                Condition_2,
+                Attribute_3,
+                Condition_3,
+                Attribute_4,
+                Condition_4,
+                Attribute_5,
+                Condition_5
+            FROM Alert_Items 
+            WHERE ID = ?
+        """
+
+        try:
+            # Using fetchone() because IDs are unique; we only expect one row
+            result = self.execute_query(query, (alert_id,))
+            return result[0] if result else None
+        except Exception as e:
+            print(f"Database Error: {e}")
+            return None
+        
+    def delete_alert_item(self, alert_id):
+        try:
+            self.cursor.execute("DELETE FROM Alert_Items WHERE ID = ?", (alert_id,))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Delete Error: {e}")
+            return False
+
+    def update_alert_item(self, row_id, sql_tuple):
+        params = sql_tuple + (row_id,)
+        
+        query = """
+        UPDATE Alert_Items 
+        SET 
+            Alert_Name =?,
+            Employee_Record_Created =?,
+            Employee_Record_Deleted =?,
+            Employee_Record_Updated =?,
+            Employee_Updated_JobRqrmt =?,
+            Employee_Updated_TrainingRqrmt =?,
+            JobRqrmt_Due_date_X_Days =?,
+            JobRqrmt_Due_date_Today =?,
+            Alert_Email_Recipient =?,
+            Alert_Username_Recipient =?,
+            Attach_File =?,
+            Details_In_Body =?,
+            App_Home_Notification =?,
+            Updated_By =?,
+            Attribute_1 =?,
+            Condition_1 =?,
+            Attribute_2 =?,
+            Condition_2 =?,
+            Attribute_3 =?,
+            Condition_3 =?,
+            Attribute_4 =?,
+            Condition_4 =?,
+            Attribute_5 =?,
+            Condition_5 =?
+
+        WHERE ID = ?
+        """
+        
+    
+        try:
+            print(f"Alert with ID {params} updated successfully.")
+            return self.execute_non_query(query, params)
+            
+
+        except Exception as e:
+            print(f"Error updating alert: {e}")
             return False

@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import Qt, QDate
 import os
-from Admin_EmployeeRequirements_Manager import EmployeeRequirementsScreen 
+from Admin_Page.Manage_Employees.Admin_EmployeeRequirements_Manager import EmployeeRequirementsScreen 
 
 class EmployeeRecordDialog(QDialog):
     def __init__(self, employee_data, db, current_admin, parent=None):

@@ -1,17 +1,25 @@
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QTabWidget, QTableWidget, 
+from PyQt5.QtWidgets import (QDialog,QWidget, QVBoxLayout, QTabWidget, QTableWidget, 
                              QTableWidgetItem, QComboBox, QHBoxLayout, 
-                             QPushButton, QMessageBox, QLabel, QHeaderView, QInputDialog, QMenu, QDialog, QFrame, QFormLayout, QLineEdit)
+                             QPushButton, QMessageBox, QLabel, QHeaderView, QInputDialog, QMenu, QFrame, QFormLayout, QLineEdit)
 from PyQt5.QtCore import Qt
-from Admin_MasterTable_New_Record import RecordEntryScreen
-from admin_AddJob_Requirement import RequirementEntryDialog
-from Admin_JobReq_Items import RequirementItemsEditor
+from Admin_Page.Master_Tables_Setup.Admin_MasterTable_New_Record import RecordEntryScreen
+from Admin_Page.Setup_Alerts.Admin_Upsert_Alert import AlertEntryDialog
+from Admin_Page.Job_Requirements.Admin_JobReq_Items import RequirementItemsEditor
 
-class RequirementsSetupManager(QWidget):
-    def __init__(self, db, current_user, back_callback):
-        super().__init__()
+class AlertItemsManager(QDialog):
+    def __init__(self, db, current_user=None, parent=None):
+        super().__init__(parent)
         self.db = db
         self.current_user = current_user
-        self.back_callback = back_callback
+
+        screen = self.screen().availableGeometry()
+        self.resize(int(screen.width() * 0.5), int(screen.height() * 0.5))
+        self.setWindowTitle("Alert Items Management")
+
+        # self.resize(1200, 800)
+        # self.setMinimumSize(800, 600)
+        # self.setWindowFlags(self.windowFlags() | Qt.WindowMaximizeButtonHint)
+
         self.init_ui()
 
     def init_ui(self):
@@ -19,27 +27,30 @@ class RequirementsSetupManager(QWidget):
         
         # Header
         header = QHBoxLayout()
-        header.addWidget(QLabel("<h2>Requirements Setup</h2>"))
-        back_btn = QPushButton("Back")
-        back_btn.clicked.connect(self.back_callback)
+        header.addWidget(QLabel("<h2>Alert Items Manager</h2>"))
+
+        back_btn = QPushButton("Close")
+        back_btn.clicked.connect(self.reject)
+
         header.addStretch()
         header.addWidget(back_btn)
         layout.addLayout(header)
 
         # Actions
         btn_layout = QHBoxLayout()
-        self.add_btn = QPushButton("Add New Group")
+        self.add_btn = QPushButton("Create New Alerts")
         self.add_btn.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold; padding: 5px 15px;")
         self.add_btn.clicked.connect(self.add_record)
+
         btn_layout.addWidget(self.add_btn)
         btn_layout.addStretch()
         layout.addLayout(btn_layout)
 
         # Table
         self.table = QTableWidget()
-        self.table.setColumnCount(7)
+        self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels([
-            "ID", "Requirement Group", "Job ID","Created By", "Date Created", "Updated By", "Date Updated"
+            "ID", "Alert Name", "Date Created", "Created By", "Updated By", "Date Updated",
         ])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -54,7 +65,7 @@ class RequirementsSetupManager(QWidget):
 
     def load_data(self):
         self.table.setRowCount(0)
-        data = self.db.get_all_requirements() 
+        data = self.db.get_all_alert_setup_items() 
         
         if not data:
             return
@@ -62,100 +73,108 @@ class RequirementsSetupManager(QWidget):
         for r_idx, row in enumerate(data):
             self.table.insertRow(r_idx)
             
-            # Explicit mapping based on your Requirements_Setup table structure:
-            # row[0]: Req_id, row[1]: Req_Group_Name, row[2]: Job_ID, 
-            # row[3]: Created_By, row[4]: Date_Created, etc.
+            # Explicit mapping based on your Alert_Dashboard_Items table structure:
+            # row[0]: ID, row[1]: Alert_Name, row[2]: Alert_Code, 
+            # row[3]: Alert_Type, row[4]: Alert_Description, row[5]: Alert_Status,
+            # row[6]: Alert_Trigger_Date, row[7]: Alert_Acknowledged_By, row[8]: Alert_Acknowledged_Date
             
             self.table.setItem(r_idx, 0, QTableWidgetItem(str(row[0]))) # ID
-            self.table.setItem(r_idx, 1, QTableWidgetItem(str(row[1]))) # Requirement Group
-            self.table.setItem(r_idx, 2, QTableWidgetItem(str(row[2]))) # Job ID (Integer)
-            self.table.setItem(r_idx, 3, QTableWidgetItem(str(row[3]))) # Created By (String)
-            self.table.setItem(r_idx, 4, QTableWidgetItem(str(row[4]))) # Date Created
-            self.table.setItem(r_idx, 5, QTableWidgetItem(str(row[5] or ""))) # Updated By
-            self.table.setItem(r_idx, 6, QTableWidgetItem(str(row[6] or ""))) # Date Updated
+            self.table.setItem(r_idx, 1, QTableWidgetItem(str(row[1]))) # Alert Name
+            self.table.setItem(r_idx, 2, QTableWidgetItem(str(row[2]))) # Date Created
+            self.table.setItem(r_idx, 3, QTableWidgetItem(str(row[3]))) # Created By
+            self.table.setItem(r_idx, 4, QTableWidgetItem(str(row[4] or ""))) # Updated By
+            self.table.setItem(r_idx, 5, QTableWidgetItem(str(row[5] or ""))) # Date Updated
 
     def add_record(self):
-        dialog = RequirementEntryDialog(self.db, self, title="Add New Requirement")
+        dialog = AlertEntryDialog(self.db, self.current_user, self, title="Add New Alert")
         if dialog.exec_() == QDialog.Accepted:
-            data = dialog.get_data()
-            if not data['name'] or data['job_id'] is None:
-                QMessageBox.warning(self, "Missing Info", "Please provide a name and select a job.")
-                return
+            self.load_data()
+            
+            # data = dialog.get_data()
+            # if not data['name']:
+            #     QMessageBox.warning(self, "Missing Info", "Please provide a name and select a job.")
+            #     return
 
-            if self.db.add_requirement(data['name'], data['job_id'], self.current_user):
-                self.load_data()
-                QMessageBox.information(self, "Success", "Requirement saved successfully.")
+            # if self.db.add_alert_item(data['name'], self.current_user):
+            #     self.load_data()
+            #     QMessageBox.information(self, "Success", "Alert saved successfully.")
 
     def show_context_menu(self, pos):
         row = self.table.currentRow()
         if row < 0: return
 
         menu = QMenu()
-        setup_items_action = menu.addAction("Setup Items") # New Option
-        menu.addSeparator()
+        # setup_items_action = menu.addAction("Setup Items") # New Option
+        # menu.addSeparator()
         edit_action = menu.addAction("Edit Record")
         delete_action = menu.addAction("Delete Record")
         
         action = menu.exec_(self.table.viewport().mapToGlobal(pos))
         
-        if action == setup_items_action:
-            self.open_setup_items(row)
-        elif action == edit_action:
+        # if action == setup_items_action:
+        #     self.open_setup_items(row)
+        if action == edit_action:
             self.edit_record(row)
         elif action == delete_action:
             self.confirm_delete(row)
 
 
-
-    # def edit_record(self, row):
-    #     # Extract existing data from the table
-    #     req_id = self.table.item(row, 0).text()
-    #     current_name = self.table.item(row, 1).text()
-    #     current_job_id = int(self.table.item(row, 2).text())
-
-    #     dialog = RequirementEntryDialog(self.db, self, title="Edit Requirement", 
-    #                                     name=current_name, job_id=current_job_id)
-        
-    #     if dialog.exec_() == QDialog.Accepted:
-    #         data = dialog.get_data()
-    #         if self.db.update_requirement(req_id, data['name'], data['job_id'], self.current_user):
-    #             self.load_data()
-    #             QMessageBox.information(self, "Success", "Requirement updated.")
-
     def edit_record(self, row):
-        req_id = self.table.item(row, 0).text()
-        name = self.table.item(row, 1).text()
-        job_id = int(self.table.item(row, 2).text())
-
-        # Open the integrated Master-Detail editor
-        dialog = EditRequirementFullDialog(self.db, req_id, name, job_id, self)
+        # 1. Get the ID from the selected row
+        row_id = self.table.item(row, 0).text()
+        
+        # 2. Fetch the full record from the DB using the ID
+        full_data = self.db.get_alert_by_id(row_id) 
+        
+        if not full_data:
+            QMessageBox.warning(self, "Error", "Could not retrieve alert data.")
+            return
+        # 3. Open the SAME dialog, but pass the data and a different title
+        dialog = AlertEntryDialog(self.db, self.current_user, self, title="Edit Alert", data=full_data)
         
         if dialog.exec_() == QDialog.Accepted:
-            header, items = dialog.get_all_data()
+            # updated_data = dialog.get_data()
             
-            # Save both header and items in one transaction
-            if self.db.update_requirement_full(req_id, header['name'], header['job_id'], self.current_user, items):
-                self.load_data()
-                QMessageBox.information(self, "Success", "All changes have been saved.")
+            # 4. Call an UPDATE method in your DB class instead of add
+            # if self.db.update_alert_item(row_id, updated_data):
+            self.load_data()
+            QMessageBox.information(self, "Success", "Alert updated successfully!")
+
+    # def edit_record(self, row):
+    #     # breakpoint()
+    #     row_id = self.table.item(row, 0).text()
+    #     # name = self.table.item(row, 1).text()
+    #     # job_id = int(self.table.item(row, 2).text())
+
+    #     # Open the integrated Master-Detail editor
+    #     dialog = EditAlertFullDialog(self.db, row_id, self)
+        
+    #     if dialog.exec_() == QDialog.Accepted:
+    #         header, items = dialog.get_all_data()
+            
+    #         # Save both header and items in one transaction
+    #         if self.db.update_alert_full(req_id, header['name'], header['job_id'], self.current_user, items):
+    #             self.load_data()
+    #             QMessageBox.information(self, "Success", "All changes have been saved.")
 
     def confirm_delete(self, row):
-        req_id = self.table.item(row, 0).text()
+        row_id = self.table.item(row, 0).text()
         name = self.table.item(row, 1).text()
         
         reply = QMessageBox.question(self, 'Confirm Delete', f"Delete {name}?",
                                    QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            if self.db.delete_requirement(req_id):
+            if self.db.delete_alert_item(row_id):
                 self.load_data()
 
-    def open_setup_items(self, row):
-        req_id = self.table.item(row, 0).text()
-        group_name = self.table.item(row, 1).text()
-        # Open the new screen
-        self.item_editor = RequirementItemsEditor(self.db, req_id, group_name)
-        self.item_editor.exec_()
+    # def open_setup_items(self, row):
+    #     req_id = self.table.item(row, 0).text()
+    #     group_name = self.table.item(row, 1).text()
+    #     # Open the new screen
+    #     self.item_editor = RequirementItemsEditor(self.db, req_id, group_name)
+    #     self.item_editor.exec_()
 
-class EditRequirementFullDialog(QDialog):
+class EditAlertFullDialog(QDialog):
     def __init__(self, db, req_id, name, job_id, parent=None):
         super().__init__(parent)
         self.db = db
@@ -236,7 +255,7 @@ class EditRequirementFullDialog(QDialog):
 
     def open_duplicate_search(self):
         # Local import to prevent circular dependency
-        from Admin_DuplicateJobReq_Items_Dialog import DuplicateSearchDialog
+        from Admin_Page.Job_Requirements.Admin_DuplicateJobReq_Items_Dialog import DuplicateSearchDialog
         
         search_dlg = DuplicateSearchDialog(self.db, self)
         if search_dlg.exec_() == QDialog.Accepted:

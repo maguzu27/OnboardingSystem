@@ -5,8 +5,9 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, QTimer, QDateTime, QSize
 import webbrowser
 from PyQt5.QtWidgets import QDialog, QFormLayout
-from admin_master_table_manager import MasterTableManager
-from admin_requirements_setup_manager import RequirementsSetupManager
+from Admin_Page.Master_Tables_Setup.admin_master_table_manager import MasterTableManager
+from Admin_Page.Job_Requirements.admin_requirements_setup_manager import RequirementsSetupManager
+from Admin_Page.Setup_Alerts.Admin_Setup_Alerts_Manager import AlertsSetupManager
 
 class AdminHome(QWidget):
     def __init__(self, admin_name, nav_to_manage, logout_callback):
@@ -47,7 +48,8 @@ class AdminHome(QWidget):
             ("Manage Employees", QStyle.SP_FileDialogContentsView, lambda: self.nav_to_manage()),
             ("Setup Master Tables", QStyle.SP_DirHomeIcon, lambda: self.nav_to_manage(MasterTableManager)),
             ("Job Requirements", QStyle.SP_FileDialogDetailedView, lambda: self.nav_to_manage(RequirementsSetupManager)),
-            ("Alerts", QStyle.SP_MessageBoxWarning, lambda: self.msg("Alerts"))
+            ("Alerts", QStyle.SP_MessageBoxWarning, lambda: self.nav_to_manage(AlertsSetupManager)),
+            # ("Alerts", QStyle.SP_MessageBoxWarning, lambda: self.msg("Alerts"))
         ]
 
         # 2. Loop through the list to create the UI

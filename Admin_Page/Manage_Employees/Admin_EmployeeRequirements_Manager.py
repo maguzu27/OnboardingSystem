@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt
 from database_manager import DatabaseManager
 import os
 import shutil
-from Admin_EmpRequirement_EditRecord import EditRequirementDialog
+from Admin_Page.Manage_Employees.Admin_EmpRequirement_EditRecord import EditRequirementDialog
 
 class EmployeeRequirementsScreen(QDialog):
     def __init__(self, db, employee_id, employee_name, parent=None):

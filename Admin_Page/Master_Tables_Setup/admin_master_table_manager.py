@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QTabWidget, QTableWidget,
                              QTableWidgetItem, QComboBox, QHBoxLayout, 
                              QPushButton, QMessageBox, QLabel, QHeaderView)
 from PyQt5.QtCore import Qt
-from Admin_MasterTable_New_Record import RecordEntryScreen
+from Admin_Page.Master_Tables_Setup.Admin_MasterTable_New_Record import RecordEntryScreen
 
 class MasterTableManager(QWidget):
     def __init__(self, db, admin_name, back_callback):

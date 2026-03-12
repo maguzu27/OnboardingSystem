@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QTabWidget, QTableWidget,
                              QPushButton, QMessageBox, QLabel, QHeaderView, QInputDialog, QMenu, QDialog)
 
 from PyQt5.QtCore import Qt
-from admin_JobReq_Item_Entry import AddRequirementItemDialog
+from Admin_Page.Job_Requirements.admin_JobReq_Item_Entry import AddRequirementItemDialog
 
 class RequirementItemsEditor(QDialog):
     def __init__(self, db, req_id, group_name, parent=None):
@@ -117,7 +117,7 @@ class RequirementItemsEditor(QDialog):
                 QMessageBox.critical(self, "Database Error", "Could not save the requirement item.")
     
     def open_duplicate_search(self):
-        from Admin_DuplicateJobReq_Items_Dialog import DuplicateSearchDialog
+        from Admin_Page.Job_Requirements.Admin_DuplicateJobReq_Items_Dialog import DuplicateSearchDialog
         
         search_dlg = DuplicateSearchDialog(self.db, self)
         if search_dlg.exec_() == QDialog.Accepted:

@@ -8,9 +8,9 @@ from email.mime.multipart import MIMEMultipart
 from PyQt5.QtWidgets import QMenu, QDialog, QFormLayout, QScrollArea
 from PyQt5.QtGui import QCursor
 from PyQt5.QtCore import Qt
-from Admin_AddEmployee import AddEmployeeDialog
+from Admin_Page.Manage_Employees.Admin_AddEmployee import AddEmployeeDialog
 import os
-from Admin_OpenEmployee_Record import EmployeeRecordDialog
+from Admin_Page.Manage_Employees.Admin_OpenEmployee_Record import EmployeeRecordDialog
 
 class AdminManageEmployees(QWidget):
     def __init__(self, db, current_user, logout_callback):
