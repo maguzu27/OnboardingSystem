@@ -1,10 +1,13 @@
 
 import sqlite3
 from tkinter.tix import TEXT
+import datetime
 
 class DatabaseManager:
-    def __init__(self):
-        self.conn = sqlite3.connect("onboarding.db")
+    def __init__(self, db_path="onboarding.db"):
+        self.db_path = db_path
+        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+        self.conn.execute("PRAGMA journal_mode=WAL;")
         self.cursor = self.conn.cursor()
         self.create_employees_table()
         self.create_employee_requirement_attach_table()
@@ -15,6 +18,7 @@ class DatabaseManager:
         self.create_employee_requirements_table()
         self.create_alert_dashboard_items_table()
         self.create_alert_items_table()
+        self.create_employee_passwords_table()
 
     def create_employees_table(self):
         query = """
@@ -118,7 +122,6 @@ class DatabaseManager:
         self.conn.commit()
 
     def upsert_master_data(self, table_type, record_id, data):
-        from datetime import datetime
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         try:
@@ -750,13 +753,145 @@ class DatabaseManager:
 
         WHERE ID = ?
         """
-        
-    
+
         try:
             print(f"Alert with ID {params} updated successfully.")
             return self.execute_non_query(query, params)
-            
 
         except Exception as e:
             print(f"Error updating alert: {e}")
             return False
+    
+    def create_employee_passwords_table(self):
+        query = """
+        CREATE TABLE IF NOT EXISTS employee_passwords (
+            employee_id INTEGER,
+            Password TEXT NOT NULL, -- Store hashed passwords, not plain text!
+            Password_Token TEXT,
+            Token_Expiry DATETIME,
+            Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            Date_Updated DATETIME,
+            Password_Reset_By TEXT,
+            Password_Reset_Date DATETIME,
+            Password_Reset_Request BOOLEAN DEFAULT 0,
+            FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
+            PRIMARY KEY (employee_id)
+        )
+        """
+
+        self.cursor.execute(query)
+        self.conn.commit()
+
+    def save_password_token(self, token, email, username, expiry):
+        """
+        Finds the employee_id via email and saves the security token.
+        'expiry' should be a datetime object.
+        """
+        try:
+            # 1. Get the employee_id from the employees table
+            self.cursor.execute("SELECT employee_id FROM employees WHERE Username = ?", (username,))
+            result = self.cursor.fetchone()
+            
+            # if not result:
+            #     print(f"Error: No employee found with email {email}")
+            #     return False
+                
+            emp_id = result[0]
+            expiry_str = expiry.strftime('%Y-%m-%d %H:%M:%S')
+
+            # 2. Insert or Update the password table
+            # We use COALESCE for Password to avoid overwriting a real password with NULL
+            # during the initial token generation.
+            query = """
+            INSERT INTO employee_passwords (
+                employee_id, 
+                Password, 
+                Password_Token, 
+                Token_Expiry, 
+                Date_Updated
+            ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(employee_id) DO UPDATE SET
+                Password_Token = excluded.Password_Token,
+                Token_Expiry = excluded.Token_Expiry,
+                Date_Updated = CURRENT_TIMESTAMP;
+            """
+            
+            # We pass "PENDING_SET" as a placeholder for the Password column 
+            # since it's NOT NULL in your schema.
+            self.cursor.execute(query, (emp_id, "PENDING_SET", token, expiry_str))
+            self.conn.commit()
+            return True
+
+        except Exception as e:
+            print(f"Database error in save_password_token: {e}")
+            self.conn.rollback()
+            return False
+    
+    def execute_query(self, query, params=()):
+        # Create a fresh connection for this specific write
+        conn = sqlite3.connect(self.db_path)
+        try:
+            # Enable WAL mode for this connection specifically
+            conn.execute("PRAGMA journal_mode=WAL;")
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            conn.commit()  # This is the physical save to the disk
+            print(f"SQL Executed: {query} | Rows affected: {cursor.rowcount}")
+        except Exception as e:
+            print(f"Database Error during execute_query: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
+
+    def fetch_one(self, query, params=()):
+        """Handles fetching a single row"""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            return cursor.fetchone()
+        finally:
+            conn.close()
+
+    def set_employee_password(self, employee_id, new_password):
+        """Updates password and returns number of rows affected."""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            conn.execute("PRAGMA journal_mode=WAL;")
+            cursor = conn.cursor()
+            cursor.execute(
+                """UPDATE employee_passwords 
+                SET Password = ?, Date_Updated = CURRENT_TIMESTAMP 
+                WHERE employee_id = ?""",
+                (new_password, employee_id)
+            )
+            conn.commit()
+            print(f"Password update: {cursor.rowcount} row(s) affected for employee_id={employee_id}")
+            return cursor.rowcount  # 0 means the employee_id row doesn't exist!
+        except Exception as e:
+            print(f"Database Error: {e}")
+            conn.rollback()
+            return 0
+        finally:
+            conn.close()    
+
+    def set_employee_password_token (self, employee_id):
+        """Updates password token and returns number of rows affected."""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            conn.execute("PRAGMA journal_mode=WAL;")
+            cursor = conn.cursor()
+            cursor.execute(
+                """UPDATE employee_passwords 
+                SET Password_Token = NULL, Date_Updated = CURRENT_TIMESTAMP 
+                WHERE employee_id = ?""",
+                (employee_id,)
+            )
+            conn.commit()
+            return cursor.rowcount  # 0 means the employee_id row doesn't exist!
+        except Exception as e:
+            print(f"Database Error: {e}")
+            conn.rollback()
+            return 0
+        finally:
+            conn.close()

@@ -89,20 +89,6 @@ class AlertsSetupManager(QWidget):
         if dialog.exec_() == QDialog.Accepted:
             self.load_data()
 
-    # def add_record(self):
-    #     dialog = AlertItemsManager(self.db, self)
-    #     # if dialog.exec_() == QDialog.Accepted:
-        #     self.load_data()
-            
-            # data = dialog.get_data()
-            # if not data['name']:
-            #     QMessageBox.warning(self, "Missing Info", "Please provide a name and select a job.")
-            #     return
-
-            # if self.db.add_alert_item(data['name'], self.current_user):
-            #     self.load_data()
-            #     QMessageBox.information(self, "Success", "Alert saved successfully.")
-
     def show_context_menu(self, pos):
         row = self.table.currentRow()
         if row < 0: return
@@ -147,13 +133,6 @@ class AlertsSetupManager(QWidget):
         if reply == QMessageBox.Yes:
             if self.db.delete_requirement(req_id):
                 self.load_data()
-
-    # def open_setup_items(self, row):
-    #     req_id = self.table.item(row, 0).text()
-    #     group_name = self.table.item(row, 1).text()
-    #     # Open the new screen
-    #     self.item_editor = RequirementItemsEditor(self.db, req_id, group_name)
-    #     self.item_editor.exec_()
 
 class EditAlertFullDialog(QDialog):
     def __init__(self, db, req_id, name, job_id, parent=None):

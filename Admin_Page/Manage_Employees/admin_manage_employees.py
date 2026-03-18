@@ -1,3 +1,4 @@
+import token
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QPushButton, QTableWidget, 
                              QTableWidgetItem, QHeaderView, QMessageBox)
@@ -112,31 +113,31 @@ class AdminManageEmployees(QWidget):
             
             self.table.setCellWidget(r_idx, 13, send_btn) 
   
-
-    # def add_emp(self):
-    #     if self.db.add_employee(self.n_in.text(), self.m_in.text(), self.e_in.text(), self.j_in.text(), self.s_in.text()):
-    #         self.load_data()
-    #         self.n_in.clear(); self.m_in.clear(); self.e_in.clear(); self.j_in.clear(); self.s_in.clear()
-    #     else:
-    #         QMessageBox.critical(self, "Error", "Employee name must be unique.")
-
     def open_add_employee_screen(self):
         dialog = AddEmployeeDialog(self.db, self)
         if dialog.exec_() == QDialog.Accepted:
             # name, email, edu, job, superv = dialog.get_data()
             employee_data = dialog.get_data()
 
-            success = self.db.add_employee_with_requirements(employee_data)
-
             # Check if fields are empty
             if not employee_data.get("Username") or not employee_data.get("Email"):
                 QMessageBox.warning(self, "Input Error", "Username and Email are required.")
                 return
 
+            success = self.db.add_employee_with_requirements(employee_data)
+
             # Add to Database
             if success:
+                link = dialog.generate_onboarding_token(employee_data["Email"], employee_data["Username"])
                 self.load_data()
-                QMessageBox.information(self, "Success", f"Employee {employee_data['Username']} added!")
+
+                # send welcome email with link
+                self.send_email_trigger(employee_data["Email"], link)
+
+                msg = f"Employee {employee_data['Username']} added!"
+
+                QMessageBox.information(self, "Success", msg)
+
             else:
                 QMessageBox.critical(self, "Error", "Username must be unique or Database error.")
 
@@ -165,7 +166,7 @@ class AdminManageEmployees(QWidget):
         else:
             QMessageBox.warning(self, "Selection Error", "Please select a row to delete.")
             
-    def send_email_trigger(self, recipient_email):
+    def send_email_trigger(self, recipient_email, link=None):
         if not recipient_email or "@" not in recipient_email:
             QMessageBox.warning(self, "Error", "Invalid email address.")
             return
@@ -183,7 +184,15 @@ class AdminManageEmployees(QWidget):
             message["To"] = recipient_email
             message["Subject"] = "Welcome to the Company - Onboarding"
 
-            body = f"Hello,\n\nWelcome to the team! Your onboarding process has officially started. Please check your portal for details.\n\nBest regards,\nAdmin Team"
+            body = (
+                f"Hello,\n\n"
+                f"Welcome to the team! Your onboarding process has officially started.\n"
+                f"Please click the link below to set up your account password:\n\n"
+                f"{link}\n\n"
+                f"Best regards,\n"
+                f"Admin Team"
+            )
+            
             message.attach(MIMEText(body, "plain"))
 
             # 2. Connect to Server and Send
@@ -194,13 +203,13 @@ class AdminManageEmployees(QWidget):
             server.quit()
 
             QMessageBox.information(self, "Success", f"Email successfully sent to {recipient_email}")
-
+            
+            return True
+        
         except Exception as e:
             QMessageBox.critical(self, "Email Error", f"Failed to send email: {str(e)}")
-
-
-            
-
+            return False
+    
     def show_context_menu(self, position):
         # Get the row index where the user clicked
         row = self.table.currentRow()
@@ -228,60 +237,3 @@ class AdminManageEmployees(QWidget):
         dialog = EmployeeRecordDialog(full_data, self.db, admin_name, self )
         if dialog.exec_() == QDialog.Accepted:
             self.load_data()
-
-        # if full_data:
-            
-            
-        # else:
-        #     QMessageBox.critical(self, "Error", "Could not retrieve full employee data.")
-
-
-
-# class AddEmployeeDialog(QDialog):
-#     def __init__(self, parent=None):
-#         super().__init__(parent)
-#         self.setWindowTitle("Add New Employee")
-#         self.setMinimumWidth(350)
-#         self.init_ui()
-
-#     def init_ui(self):
-#         layout = QVBoxLayout()
-#         form = QFormLayout()
-
-#         # Create input fields
-#         self.n_in = QLineEdit(); self.n_in.setPlaceholderText("Full Name")
-#         self.m_in = QLineEdit(); self.m_in.setPlaceholderText("Email Address")
-#         self.e_in = QLineEdit(); self.e_in.setPlaceholderText("Education/Degree")
-#         self.j_in = QLineEdit(); self.j_in.setPlaceholderText("Job Title")
-#         self.s_in = QLineEdit(); self.s_in.setPlaceholderText("Supervisor Name")
-
-#         # Styling inputs to match your theme
-#         input_style = "padding: 8px; border: 1px solid #ccc; border-radius: 4px;"
-#         for widget in [self.n_in, self.m_in, self.e_in, self.j_in, self.s_in]:
-#             widget.setStyleSheet(input_style)
-
-#         form.addRow("Name:", self.n_in)
-#         form.addRow("Email:", self.m_in)
-#         form.addRow("Education:", self.e_in)
-#         form.addRow("Job Title:", self.j_in)
-#         form.addRow("Supervisor:", self.s_in)
-
-#         # Buttons
-#         self.submit_btn = QPushButton("Confirm Add")
-#         self.submit_btn.setStyleSheet("""
-#             QPushButton { background-color: #3498db; color: white; font-weight: bold; padding: 10px; border-radius: 5px; }
-#             QPushButton:hover { background-color: #2980b9; }
-#         """)
-#         self.submit_btn.clicked.connect(self.accept) # Closes dialog and returns "Accepted"
-
-#         layout.addLayout(form)
-#         layout.addSpacing(10)
-#         layout.addWidget(self.submit_btn)
-#         self.setLayout(layout)
-
-#     def get_data(self):
-#         """Returns the data entered in the fields"""
-#         return (self.n_in.text(), self.m_in.text(), self.e_in.text(), 
-#                 self.j_in.text(), self.s_in.text())
-
-
