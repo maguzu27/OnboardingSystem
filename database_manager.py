@@ -2,6 +2,7 @@
 import sqlite3
 from tkinter.tix import TEXT
 import datetime
+from logger_config import logger
 
 class DatabaseManager:
     def __init__(self, db_path="onboarding.db"):
@@ -225,10 +226,11 @@ class DatabaseManager:
             
             # Check if any row was actually affected
             if self.cursor.rowcount > 0:
+                logger.info(f"delete_employee: Employee with ID {emp_id} deleted successfully.")
                 return True
             return False
         except Exception as e:
-            print(f"Database Delete Error: {e}")
+            logger.error(f"delete_employee: Database Delete Error: {e}")
             return False
 
     def get_all_employees(self):
@@ -597,6 +599,9 @@ class DatabaseManager:
         CREATE TABLE IF NOT EXISTS Alert_Items (
             ID INTEGER PRIMARY KEY AUTOINCREMENT,
             Alert_Name TEXT,
+            Alert_Description TEXT,
+            Alert_Code TEXT,
+            Alert_Type TEXT,
             Employee_Record_Created BOOLEAN,
             Employee_Record_Deleted BOOLEAN,
             Employee_Record_Updated BOOLEAN,
@@ -836,9 +841,9 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute(query, params)
             conn.commit()  # This is the physical save to the disk
-            print(f"SQL Executed: {query} | Rows affected: {cursor.rowcount}")
+            logger.info(f"execute_query: SQL Executed: {query} | Rows affected: {cursor.rowcount}")
         except Exception as e:
-            print(f"Database Error during execute_query: {e}")
+            logger.error(f"Database Error during execute_query: {e}")
             conn.rollback()
         finally:
             conn.close()
@@ -849,7 +854,12 @@ class DatabaseManager:
         try:
             cursor = conn.cursor()
             cursor.execute(query, params)
+            logger.info(f"fetch_one: SQL Executed: {query} | Rows affected: {cursor.rowcount}")
             return cursor.fetchone()
+        except Exception as e:
+            logger.error(f"Database Error during fetch_one: {e}")
+            conn.rollback()
+            return None
         finally:
             conn.close()
 
@@ -866,10 +876,10 @@ class DatabaseManager:
                 (new_password, employee_id)
             )
             conn.commit()
-            print(f"Password update: {cursor.rowcount} row(s) affected for employee_id={employee_id}")
+            logger.info(f"set_employee_password: Password update: {cursor.rowcount} row(s) affected for employee_id={employee_id}")
             return cursor.rowcount  # 0 means the employee_id row doesn't exist!
         except Exception as e:
-            print(f"Database Error: {e}")
+            logger.error(f"Database Error during set_employee_password: {e}")
             conn.rollback()
             return 0
         finally:
@@ -888,10 +898,63 @@ class DatabaseManager:
                 (employee_id,)
             )
             conn.commit()
+            logger.info(f"set_employee_password_token: Password token cleared: {cursor.rowcount} row(s) affected for employee_id={employee_id}") 
             return cursor.rowcount  # 0 means the employee_id row doesn't exist!
         except Exception as e:
-            print(f"Database Error: {e}")
+            logger.error(f"Database Error during set_employee_password_token: {e}")
             conn.rollback()
             return 0
+        finally:
+            conn.close()
+
+    def dispatch_alert_event(self, event_type, employee_name, performed_by="System"):
+        # Using 'with' here ensures the connection is closed even if the code crashes
+        with sqlite3.connect(self.db_path, timeout=10) as conn:
+            # 'timeout=10' tells SQLite to wait up to 10 seconds if another user 
+            # is currently writing, instead of crashing immediately.
+            conn.execute("PRAGMA journal_mode=WAL;")
+            cursor = conn.cursor()
+            
+            try:
+                # 1. Fetch templates
+                query_find = f"SELECT Alert_Name, Alert_Code, Alert_Type, Alert_Description FROM Alert_Items WHERE {event_type} = 1"
+                cursor.execute(query_find)
+                alerts = cursor.fetchall()
+
+                if not alerts:
+                    return
+
+                # 2. Batch Insert (Highly efficient for multiple users)
+                insert_query = """
+                    INSERT INTO Alert_Dashboard_Items (
+                        Alert_Name, Alert_Code, Alert_Type, Alert_Description, 
+                        Alert_Trigger_Date, Alert_Status, Created_By, Date_Created
+                    ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 'Pending', ?, CURRENT_TIMESTAMP)
+                """
+                
+                # Prepare all data first
+                payload = []
+                for a in alerts:
+                    desc = f"{a[3]} - Employee {employee_name} was {event_type.split('_')[-1].lower()}."
+                    payload.append((a[0], a[1], a[2], desc, performed_by))
+
+                # executemany is much faster for enterprise loads than a loop
+                cursor.executemany(insert_query, payload)
+                
+                # No need for conn.commit() inside 'with sqlite3.connect' - it's automatic!
+                
+            except Exception as e:
+                logger.error(f"Database Error during dispatch_alert_event: Critical Transaction Failure for {event_type}: {e}")
+                conn.rollback()
+
+    def fetch_all(self, query, params=()):
+        """Handles fetching all rows for a query"""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            # This allows you to access columns by name like row['Alert_Name']
+            conn.row_factory = sqlite3.Row 
+            cursor = conn.cursor()
+            cursor.execute(query, params)
+            return cursor.fetchall()
         finally:
             conn.close()

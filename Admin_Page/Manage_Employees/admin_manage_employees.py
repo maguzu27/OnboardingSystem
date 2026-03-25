@@ -161,6 +161,7 @@ class AdminManageEmployees(QWidget):
                     if self.db.delete_employee(employee_id):
                         self.load_data()
                         QMessageBox.information(self, "Success", "Employee deleted.")
+                        self.db.dispatch_alert_event("Employee_Record_Deleted", username, "Admin_User")
                     else:
                         QMessageBox.critical(self, "Error", "Could not delete from database.")
         else:

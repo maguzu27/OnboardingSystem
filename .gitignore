@@ -3,6 +3,10 @@
 *.db-journal
 *.db-shm
 *.db-wal
+*test_onboarding.db
+*test_onboarding.db-journal
+*test_onboarding.db-shm
+*test_onboarding.db-wal
 
 # Uploads and User Content
 uploaded_requirements/
@@ -18,3 +22,7 @@ venv/
 build/
 dist/
 *.spec
+
+# Logs and temporary files
+logs/master_system.log
+Admin_Page/Web_Portal/logs/master_system.log
