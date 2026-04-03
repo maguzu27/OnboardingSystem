@@ -50,10 +50,9 @@ class EmployeeRequirementsScreen(QDialog):
                 er.Requirement_Completion_Date,
                 ra.attachment_id,
                 ra.file_path
-
             FROM Employee_Requirements er
-            JOIN Requirements_Setup_Items rsi ON er.Req_id = rsi.Req_id AND er.Req_line_id = rsi.Req_line_id
-            LEFT JOIN Requirement_Attachments ra ON er.Employee_Req_ID = ra.Employee_Req_ID and er.Employee_id = ra.Employee_Name
+                JOIN Requirements_Setup_Items rsi ON er.Req_id = rsi.Req_id AND er.Req_line_id = rsi.Req_line_id
+                LEFT JOIN Requirement_Attachments ra ON er.Employee_Req_ID = ra.Employee_Req_ID and er.Employee_id = ra.Employee_Name
             WHERE er.Employee_id = ?
         """
         rows = self.db.execute_query(query, (self.employee_id,))

@@ -8,8 +8,9 @@ from PyQt5.QtWidgets import QLineEdit, QAction
 from Settings_Screen import AdvancedSettingsDialog
 
 class LoginWindow(QWidget):
-    def __init__(self, on_login_success):
+    def __init__(self, db, on_login_success):
         super().__init__()
+        self.db = db
         self.on_login_success = on_login_success
         self.init_ui()
 
@@ -54,8 +55,8 @@ class LoginWindow(QWidget):
         # self.toggle_pw_action = self.password.addAction(eye_icon, QLineEdit.TrailingPosition)
 
         # Connect text change to check admin credentials in real-time
-        self.username.textChanged.connect(self.check_admin_creds)
-        self.password.textChanged.connect(self.check_admin_creds)
+        self.username.editingFinished.connect(self.check_admin_creds)
+        self.password.editingFinished.connect(self.check_admin_creds)
 
         # Login Button
         self.login_btn = QPushButton("Login")
@@ -102,16 +103,25 @@ class LoginWindow(QWidget):
         self.admin_settings_btn.setAutoDefault(False)
         self.admin_settings_btn.setDefault(False)
         
-        
         self.setLayout(layout)
         self.username.setFocus()
 
     def check_admin_creds(self):
-        """Toggle button visibility based on input"""
-        if self.username.text() == "admin" and self.password.text() == "admin123":
+
+        user = self.username.text()
+        pw = self.password.text()
+
+        result = self.db.verify_login(user, pw)
+
+        if result and result[0] == "Admin":
             self.admin_settings_btn.show()
         else:
             self.admin_settings_btn.hide()
+
+        # """Toggle button visibility based on input"""
+        # if self.username.text() == "admin" and self.password.text() == "admin123":
+        #     self.admin_settings_btn.show()
+        
 
     def open_db_settings(self):
         dialog = AdvancedSettingsDialog(self)
@@ -121,15 +131,27 @@ class LoginWindow(QWidget):
         #                         "Current Database: onboarding.db\nConnection Status: Local SQLite3")
 
     def handle_login(self):
-        # ... (Your existing handle_login code) ...
         user = self.username.text()
         pw = self.password.text()
-        if user == "admin" and pw == "admin123":
-            self.on_login_success("admin", user)
-        elif user != "" and pw == "123":
-            self.on_login_success("employee", user)
+
+        result = self.db.verify_login(user, pw)
+
+        if result:
+            role = result[0]      # e.g., 'admin' or 'employee'
+            username = result[1]  # e.g., 'JohnDoe'
+
+            self.on_login_success(role.lower(), username)
+
         else:
-            QMessageBox.warning(self, "Error", "Invalid credentials!")
+            QMessageBox.warning(self, "Error", "Invalid Credentials")
+
+
+        # if user == "admin" and pw == "admin123":
+        #     self.on_login_success("admin", user)
+        # elif user != "" and pw == "123":
+        #     self.on_login_success("employee", user)
+        # else:
+        #     QMessageBox.warning(self, "Error", "Invalid credentials!")
 
     def toggle_password_visibility(self):
             if self.password.echoMode() == QLineEdit.Password:
@@ -140,6 +162,9 @@ class LoginWindow(QWidget):
                 self.toggle_action.setIcon(QIcon(self.eye_icon_path))
 
     def manage_icon_visibility(self):
+        if not self.username.text() or not self.password.text():
+            self.admin_settings_btn.hide()
+
         # Only show the eye icon if there is text in the box
         if len(self.password.text()) > 0:
             self.toggle_action.setVisible(True)
@@ -148,3 +173,10 @@ class LoginWindow(QWidget):
             # Optional: Reset to password mode if they clear the text
             self.password.setEchoMode(QLineEdit.Password)
             self.toggle_action.setIcon(QIcon(self.eye_icon_path))
+    
+    # In login_window.py
+    def showEvent(self, event):
+        """Resets the UI state every time the window is shown."""
+        super().showEvent(event)
+        if hasattr(self, 'admin_settings_btn'):
+            self.admin_settings_btn.hide()

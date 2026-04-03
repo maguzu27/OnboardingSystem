@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication, QStackedWidget
 from database_manager import DatabaseManager
 from login_window import LoginWindow
 from admin_screens import AdminHome
-from employee_dashboard import EmployeeDashboard
+from Employee_Page.employee_dashboard import EmployeeDashboard
 from Admin_Page.Manage_Employees.admin_manage_employees import AdminManageEmployees
 from Admin_Page.Master_Tables_Setup.admin_master_table_manager import MasterTableManager
 from Admin_Page.Job_Requirements.admin_requirements_setup_manager import RequirementsSetupManager
@@ -23,7 +23,7 @@ class MainApp(QStackedWidget):
             QLineEdit { padding: 5px; border: 1px solid #ccc; border-radius: 3px; }
         """)
 
-        self.login_page = LoginWindow(self.handle_routing)
+        self.login_page = LoginWindow(self.db, self.handle_routing)
         self.admin_home = AdminHome("Admin User", self.go_to_manage_employees, self.show_login)
         self.admin_manage_page = AdminManageEmployees(self.db, self.logged_in_user, self.go_to_admin_home)
         self.employee_page = EmployeeDashboard(self.db, self.show_login)
@@ -45,6 +45,8 @@ class MainApp(QStackedWidget):
         self.setCurrentIndex(0)
 
     def handle_routing(self, role, username):
+        self.logged_in_user = username
+
         if role == "admin":
             self.admin_home.admin_label.setText(f"Welcome, {username}")
             self.setCurrentIndex(1)
@@ -74,6 +76,7 @@ class MainApp(QStackedWidget):
     def show_login(self):
         self.login_page.username.clear()
         self.login_page.password.clear()
+        self.login_page.admin_settings_btn.hide()
         self.setCurrentIndex(0)
 
     def on_login_success(self, role, username):

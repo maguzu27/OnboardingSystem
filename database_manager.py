@@ -20,6 +20,7 @@ class DatabaseManager:
         self.create_alert_dashboard_items_table()
         self.create_alert_items_table()
         self.create_employee_passwords_table()
+        self.create_account_access_table()
 
     def create_employees_table(self):
         query = """
@@ -32,6 +33,7 @@ class DatabaseManager:
             Nick_Name TEXT,
             Age INTEGER NOT NULL,
             Gender TEXT NOT NULL,
+            Education TEXT,
             Email TEXT NOT NULL,
             Address TEXT NOT NULL,
             Telephone TEXT NOT NULL,
@@ -250,7 +252,22 @@ class DatabaseManager:
     def get_employee_by_username(self, username):
         try:
             # Update the query to use 'Username' instead of 'name'
-            self.cursor.execute("SELECT * FROM employees WHERE Username=?", (username,))
+            self.cursor.execute(
+                """Select 
+                    emp.Username, emp.First_name, emp.Last_name, emp.Display_name,
+                    emp.Nick_Name, emp.Age, emp.Gender, emp.Email, emp.Address, emp.Telephone, emp.Cellphone, emp.Education,
+                    emp.Supervisor_id, supervisor.username Supervisor,
+                    emp.Employeement_Status,
+                    dept.dept_id, dept.dept_name, dept.dept_description,
+                    jobs.job_title, jobs.job_description, emp.employee_id
+                from 
+	                employees emp left join departments dept on (emp.dept_id = dept.dept_id)
+	                left join jobs jobs on (jobs.job_title_id = emp.job_title_id)
+                    left join (SELECT employee_id, Username FROM employees) supervisor ON (supervisor.employee_id = emp.Supervisor_id)
+                WHERE 
+	                emp.username =?""", (username,)
+            )
+
             return self.cursor.fetchone()
         except Exception as e:
             print(f"Error fetching employee: {e}")
@@ -259,7 +276,20 @@ class DatabaseManager:
     def get_employee_attachment(self, username):
         try:
             # Using Username as the identifier for the file path
-            self.cursor.execute("SELECT File_path FROM Requirement_Attachments WHERE employee_name=?", (username,))
+            self.cursor.execute("""
+            Select 
+                emp.Username, emp.First_name, emp.Last_name, emp.Display_name,
+                emp.Nick_Name, emp.Age, emp.Gender, emp.Email, emp.Address, emp.Telephone, emp.Cellphone,
+                emp.Supervisor_id, (SELECT username sv_name from employees where employee_id = emp.supervisor_id) Supervisor,
+                emp.Employeement_Status,
+                dept.dept_id, dept.dept_name, dept.dept_description,
+                jobs.job_title, jobs.job_description
+                
+            from 
+                employees emp left join departments dept on (emp.dept_id = dept.dept_id)
+                left join jobs jobs on (jobs.job_title_id = emp.job_title_id)
+            WHERE 
+                emp.username = ?""", (username,))
             result = self.cursor.fetchone()
             return result[0] if result else None
         except Exception as e:
@@ -832,21 +862,21 @@ class DatabaseManager:
             self.conn.rollback()
             return False
     
-    def execute_query(self, query, params=()):
-        # Create a fresh connection for this specific write
-        conn = sqlite3.connect(self.db_path)
-        try:
-            # Enable WAL mode for this connection specifically
-            conn.execute("PRAGMA journal_mode=WAL;")
-            cursor = conn.cursor()
-            cursor.execute(query, params)
-            conn.commit()  # This is the physical save to the disk
-            logger.info(f"execute_query: SQL Executed: {query} | Rows affected: {cursor.rowcount}")
-        except Exception as e:
-            logger.error(f"Database Error during execute_query: {e}")
-            conn.rollback()
-        finally:
-            conn.close()
+    # def execute_query(self, query, params=()):
+    #     # Create a fresh connection for this specific write
+    #     conn = sqlite3.connect(self.db_path)
+    #     try:
+    #         # Enable WAL mode for this connection specifically
+    #         conn.execute("PRAGMA journal_mode=WAL;")
+    #         cursor = conn.cursor()
+    #         cursor.execute(query, params)
+    #         conn.commit()  # This is the physical save to the disk
+    #         logger.info(f"execute_query: SQL Executed: {query} | Rows affected: {cursor.rowcount}")
+    #     except Exception as e:
+    #         logger.error(f"Database Error during execute_query: {e}")
+    #         conn.rollback()
+    #     finally:
+    #         conn.close()
 
     def fetch_one(self, query, params=()):
         """Handles fetching a single row"""
@@ -958,3 +988,64 @@ class DatabaseManager:
             return cursor.fetchall()
         finally:
             conn.close()
+
+    def verify_login(self, username, password):
+
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            query = """
+                SELECT COALESCE(a.Role, 'employee'), e.Username
+                FROM employees e
+                LEFT JOIN employee_passwords p ON e.employee_id = p.employee_id
+                LEFT JOIN account_access a ON e.employee_id = a.Employee_id
+                WHERE e.Username = ? AND p.Password = ?
+            """
+
+            cursor.execute(query, (username, password))
+            result = cursor.fetchone() # This actually gets the data
+            if result:
+                # result will be something like ('admin', 'magatjo')
+                logger.info(f"Login successful for: {result[1]}")
+                return result 
+        
+            logger.warning(f"Login failed for: {username}")
+
+            return None
+
+        # # Note: In a production app, you would use werkzeug.security.check_password_hash
+
+        # print(f"Executing login query for user: '{username}', query: {query}")  # Debug statement before executing the query
+        # result = self.execute_query(query, (username, password))
+
+        
+        # if result:
+        #     print(f"Login successful for user: {result[0][1]} with role: {result[0][0]}")  # Debug statement
+        #     return result[0]  # Returns e.g., ('admin', 'JohnDoe') or ('employee', 'JaneDoe')
+        # return None
+    
+    def create_account_access_table(self):
+        query = """
+        CREATE TABLE IF NOT EXISTS account_access (
+            ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            Employee_id INTEGER NOT NULL,
+            Role TEXT NOT NULL,
+            Created_By TEXT,
+            Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            Updated_By TEXT,
+            Date_Updated DATETIME,
+            FOREIGN KEY (Employee_id) REFERENCES Employees(Employee_id)
+        )
+        """
+        self.cursor.execute(query)
+        self.conn.commit()
+
+    def update_employee_profile(self, username, new_nickname, new_age, new_gender, new_address, new_telephone, new_cellphone, new_education):
+        query = "UPDATE employees SET Nick_Name = ?, Age = ?, Gender = ?, Address = ?, Telephone = ?, Cellphone = ?, Education = ? WHERE Username = ?"
+        try:
+            # Reusing your existing connection logic
+            self.cursor.execute(query, (new_nickname, new_age, new_gender, new_address, new_telephone, new_cellphone, new_education, username))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Update Error: {e}")
+            return False
