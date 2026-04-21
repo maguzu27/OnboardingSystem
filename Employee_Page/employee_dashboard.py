@@ -111,7 +111,8 @@ class EmployeeDashboard(QWidget):
     def load_employee_data(self, username):
         self.current_user = username
         self.profile_screen.refresh_data(username)
-        self.req_screen.username = username
 
-        self.profile_screen.refresh_data(username)
+        self.req_screen.username = username
         self.req_screen.refresh_table_data()
+
+        self.header_label.setText(f"Welcome Back, {username}!")

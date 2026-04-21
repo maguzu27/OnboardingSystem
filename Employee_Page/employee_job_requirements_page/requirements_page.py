@@ -17,83 +17,65 @@ class RequirementsPage(QWidget):
         layout.setContentsMargins(0, 10, 0, 0)
         layout.setSpacing(15)
 
-        # Title
         title = QLabel("📋 My Onboarding Checklists & Documents")
         title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50;")
         layout.addWidget(title)
 
-        # --- THE PROFESSIONAL TABLE ---
         self.table = QTableWidget()
-        self.table.setColumnCount(6)
+        self.table.setColumnCount(7)
         self.table.setHorizontalHeaderLabels([
-            "ID", "Requirement Item", "Type", "Status", "Due Date", "Completed Date"
+            "ID", "Requirement Item", "Type", "Status", "Due Date", "Completed Date", "Attachment"
         ])
         
-        # Table Styling
+        # Professional Styling
         self.table.setStyleSheet("""
-            QTableWidget {
-                background-color: white;
-                border-radius: 8px;
-                border: 1px solid #dcdde1;
-                gridline-color: #f1f2f6;
-            }
-            QHeaderView::section {
-                background-color: #34495e;
-                color: white;
-                font-weight: bold;
-                padding: 8px;
-                border: none;
-            }
-            QTableWidget::item {
-                padding: 10px;
-                color: #2c3e50;
-            }
+            QTableWidget { background-color: white; border-radius: 8px; border: 1px solid #dcdde1; }
+            QHeaderView::section { background-color: #34495e; color: white; font-weight: bold; padding: 8px; }
+            QTableWidget::item { padding: 10px; color: #2c3e50; }
         """)
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers) # Read-only for employees
-        
-        # Stretch columns gracefully
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents) # ID column small
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(45) # Give buttons more height
+
+        # --- FIX FOR STRETCHED/SQUEEZED COLUMNS ---
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Interactive) # Allow manual adjustment
+        header.setSectionResizeMode(0, QHeaderView.ResizeToContents) # ID
+        header.setSectionResizeMode(1, QHeaderView.Stretch)          # Requirement Name takes priority
+        header.setSectionResizeMode(2, QHeaderView.ResizeToContents) # Type
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents) # Status
+        header.setSectionResizeMode(4, QHeaderView.ResizeToContents) # Due Date
+        header.setSectionResizeMode(5, QHeaderView.ResizeToContents) # Completed Date
+        header.setSectionResizeMode(6, QHeaderView.ResizeToContents) # Attachment Button
         
         layout.addWidget(self.table)
 
-        # --- ACTIONS SECTION ---
+        # Bottom Action Bar
         actions_layout = QHBoxLayout()
-        
         self.upload_btn = QPushButton(" ⬆  Upload Document for Selected Item")
         self.upload_btn.setFixedWidth(300)
         self.upload_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #1abc9c; color: white; padding: 12px; 
-                border-radius: 6px; font-weight: bold; font-size: 13px;
-            }
+            QPushButton { background-color: #1abc9c; color: white; padding: 12px; border-radius: 6px; font-weight: bold; }
             QPushButton:hover { background-color: #16a085; }
         """)
-        self.upload_btn.clicked.connect(self.handle_upload)
-
+        self.upload_btn.clicked.connect(self.handle_general_upload)
         actions_layout.addWidget(self.upload_btn)
         actions_layout.addStretch()
-        
         layout.addLayout(actions_layout)
 
     def refresh_table_data(self):
-        """Fetches requirements for the current username and populates the table."""
-        if not self.username:
-            return
+        if not self.username: return
 
-        # 1. Get Employee ID from Username (since query filters by Employee_id)
         emp_data = self.db.get_employee_by_username(self.username)
-        if not emp_data:
-            return
+        if not emp_data: return
         
-        employee_id = emp_data[20]
-        print (f"Refreshing requirements table for employee ID: {employee_id} (username: {self.username})")  # Debug statement
+        # Using index 0 for ID (standard) - update if your schema differs
+        employee_id = emp_data[20] 
 
-        # 2. Query data
         query = """
-            SELECT 
+           SELECT 
                 er.Employee_Req_ID, 
                 rsi.Req_Name, 
                 rsi.Req_Item_Type, 
@@ -108,66 +90,78 @@ class RequirementsPage(QWidget):
             WHERE er.Employee_id = ?
         """
         rows = self.db.execute_query(query, (employee_id,))
-        print(f"Loaded using employee_id: {employee_id}")  # Debug statement to check what data is being returned
-        print(f"Loaded {len(rows)} requirement records for employee ID {employee_id}")  # Debug statement
-
         self.table.setRowCount(0)
         
-        if not rows:
-            return
-
         for r_idx, row in enumerate(rows):
             self.table.insertRow(r_idx)
+            self.table.setItem(r_idx, 0, QTableWidgetItem(str(row[0])))
+            self.table.setItem(r_idx, 1, QTableWidgetItem(str(row[1])))
+            self.table.setItem(r_idx, 2, QTableWidgetItem(str(row[2])))
             
-            # Map selected SQL columns to UI cells
-            self.table.setItem(r_idx, 0, QTableWidgetItem(str(row[0]))) # ID
-            self.table.setItem(r_idx, 1, QTableWidgetItem(str(row[1]))) # Name
-            self.table.setItem(r_idx, 2, QTableWidgetItem(str(row[2]))) # Type
-            self.table.setItem(r_idx, 3, QTableWidgetItem(str(row[3]))) # Status
-            self.table.setItem(r_idx, 4, QTableWidgetItem(str(row[4]) if row[4] else "N/A")) # Due Date
-            self.table.setItem(r_idx, 5, QTableWidgetItem(str(row[5]) if row[5] else "Pending")) # Comp Date
+            status = str(row[3])
+            status_item = QTableWidgetItem(status)
+            if status.lower() == "completed":
+                status_item.setForeground(Qt.darkGreen)
+            self.table.setItem(r_idx, 3, status_item)
 
-    def handle_upload(self):
-        # Determine which row is selected
+            self.table.setItem(r_idx, 4, QTableWidgetItem(str(row[4]) if row[4] else "N/A"))
+            self.table.setItem(r_idx, 5, QTableWidgetItem(str(row[5]) if row[5] else "Pending"))
+
+            # Button logic
+            req_id = str(row[0])
+            file_path = row[7]
+
+            if file_path and os.path.exists(file_path):
+                btn = QPushButton("📄 View File")
+                btn.setStyleSheet("background-color: #3498db; color: white; border-radius: 4px; padding: 5px;")
+                btn.clicked.connect(lambda checked, p=file_path: os.startfile(os.path.abspath(p)))
+            else:
+                btn = QPushButton("⬆ Upload")
+                btn.setStyleSheet("background-color: #1abc9c; color: white; border-radius: 4px; padding: 5px; font-weight: bold;")
+                btn.clicked.connect(lambda checked, r=req_id: self.process_upload(r))
+            
+            self.table.setCellWidget(r_idx, 6, btn)
+
+    def handle_general_upload(self):
+        """Logic for the large button below the table"""
         selected_ranges = self.table.selectedRanges()
         if not selected_ranges:
-            QMessageBox.warning(self, "Selection Missing", "Please select a requirement from the table first!")
+            QMessageBox.warning(self, "Selection Missing", "Please select a row first!")
             return
-
         row = selected_ranges[0].topRow()
         req_id = self.table.item(row, 0).text()
+        self.process_upload(req_id)
 
+    def process_upload(self, req_id):
+        """Unified upload logic used by both the row buttons and the general button"""
         file_path, _ = QFileDialog.getOpenFileName(self, "Open Document", "", "PDF Files (*.pdf);;Images (*.png *.jpg)")
-        
-        if file_path:
-            try:
-                # Setup destination
-                upload_dir = "uploaded_requirements"
-                os.makedirs(upload_dir, exist_ok=True)
+        if not file_path: return
 
-                original_filename = os.path.basename(file_path)
-                file_size = os.path.getsize(file_path)
-                
-                unique_filename = f"{self.username}_{req_id}_{original_filename}"
-                destination_path = os.path.join(upload_dir, unique_filename)
+        try:
+            upload_dir = "uploaded_requirements"
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            original_filename = os.path.basename(file_path)
+            unique_filename = f"{self.username}_{req_id}_{original_filename}"
+            destination_path = os.path.join(upload_dir, unique_filename)
 
-                shutil.copy(file_path, destination_path)
+            shutil.copy(file_path, destination_path)
 
-                # Save to DB
-                success = self.db.add_attachment(
-                    file_path=destination_path,
-                    file_name=unique_filename,
-                    original_name=original_filename,
-                    username=self.username,
-                    file_size=file_size,
-                    employee_req_id=req_id
-                )
+            success = self.db.add_attachment(
+                file_path=destination_path,
+                file_name=unique_filename,
+                original_name=original_filename,
+                username=self.username,
+                file_size=os.path.getsize(file_path),
+                employee_req_id=req_id
+            )
 
-                if success:
-                    QMessageBox.information(self, "Success", "Requirement document uploaded successfully!")
-                    self.refresh_table_data() # Update the table view
-                else:
-                    QMessageBox.warning(self, "Error", "Attachment failed to save to database.")
+            if success:
+                QMessageBox.information(self, "Success", "Document uploaded successfully!")
+                self.refresh_table_data()
+            else:
+                QMessageBox.warning(self, "Error", "Database update failed.")
 
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Upload failed: {str(e)}")
+            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")

@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QDialog, QFormLayout
 from Admin_Page.Master_Tables_Setup.admin_master_table_manager import MasterTableManager
 from Admin_Page.Job_Requirements.admin_requirements_setup_manager import RequirementsSetupManager
 from Admin_Page.Setup_Alerts.Admin_Setup_Alerts_Manager import AlertsSetupManager
+from Admin_Page.Trainings_Setup.Admin_Setup_Trainings import AdminTrainingManagement
 
 class AdminHome(QWidget):
     def __init__(self, admin_name, nav_to_manage, logout_callback):
@@ -49,6 +50,7 @@ class AdminHome(QWidget):
             ("Setup Master Tables", QStyle.SP_DirHomeIcon, lambda: self.nav_to_manage(MasterTableManager)),
             ("Job Requirements", QStyle.SP_FileDialogDetailedView, lambda: self.nav_to_manage(RequirementsSetupManager)),
             ("Alerts", QStyle.SP_MessageBoxWarning, lambda: self.nav_to_manage(AlertsSetupManager)),
+            ("Trainings", QStyle.SP_MessageBoxInformation, lambda: self.nav_to_manage(AdminTrainingManagement)),
             # ("Alerts", QStyle.SP_MessageBoxWarning, lambda: self.msg("Alerts"))
         ]
 

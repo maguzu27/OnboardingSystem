@@ -21,6 +21,9 @@ class DatabaseManager:
         self.create_alert_items_table()
         self.create_employee_passwords_table()
         self.create_account_access_table()
+        self.create_training_table()
+        self.create_employee_trainings_table()
+
 
     def create_employees_table(self):
         query = """
@@ -155,8 +158,22 @@ class DatabaseManager:
             return False
 
     def delete_master_data(self, table_type, record_id):
-        table = "Jobs" if table_type == "Jobs" else "Departments"
-        pk = "job_title_id" if table_type == "Jobs" else "dept_id"
+        print(f"Attempting to delete from {table_type} with ID {record_id}")
+        pk= None
+        table = None
+        if table_type == "Jobs":
+            pk = "job_title_id"
+            table = "Jobs"
+        elif table_type == "Departments":
+            pk = "dept_id"
+            table = "Departments"
+        elif table_type == "Requirements":
+            pk = "Req_id"
+            table = "Requirements_Setup"
+        elif table_type == "Trainings":
+            pk = "training_id"
+            table = "Trainings"
+        print(f"Constructed DELETE query for table {table} with primary key {pk}")
         try:
             self.cursor.execute(f"DELETE FROM {table} WHERE {pk} = ?", (record_id,))
             self.conn.commit()
@@ -1044,6 +1061,198 @@ class DatabaseManager:
         try:
             # Reusing your existing connection logic
             self.cursor.execute(query, (new_nickname, new_age, new_gender, new_address, new_telephone, new_cellphone, new_education, username))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Update Error: {e}")
+            return False
+        
+    def create_training_table(self):
+        query = """
+        CREATE TABLE IF NOT EXISTS Trainings (
+            training_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            training_name TEXT UNIQUE NOT NULL,
+            training_description TEXT NOT NULL,
+            training_type TEXT NOT NULL,
+            training_duration INTEGER NOT NULL,
+            training_provider TEXT NOT NULL,
+            training_contact_name TEXT NOT NULL,
+            training_contact_email TEXT NOT NULL,
+            training_resources TEXT,
+            group_requirement TEXT,
+            Created_By TEXT,
+            Date_Created TEXT,
+            Updated_By TEXT,
+            Date_Updated TEXT
+        )
+        """
+        self.cursor.execute(query)
+        self.conn.commit()
+
+
+    def create_employee_trainings_table(self):
+        query = """
+        CREATE TABLE IF NOT EXISTS Employee_Trainings (
+            employee_id INTEGER NOT NULL,
+            training_id INTEGER NOT NULL,
+            required BOOLEAN DEFAULT 1,
+            required_by_date DATETIME,
+            completion_status TEXT DEFAULT 'Not Started',
+            completion_date DATETIME,
+            percentage_completed INTEGER DEFAULT 0,
+            assigned_by TEXT,
+            approved_by TEXT,
+            Created_By TEXT,
+            Date_Created TEXT,
+            Updated_By TEXT,
+            Date_Updated TEXT,
+            PRIMARY KEY (employee_id, training_id),
+            FOREIGN KEY (employee_id) REFERENCES Employees(Employee_id),
+            FOREIGN KEY (training_id) REFERENCES Trainings(training_id)
+
+            
+        )
+        """
+        self.cursor.execute(query)
+        self.conn.commit()
+
+
+    def get_all_training_items(self):
+        query = """
+            SELECT 
+                training_id, training_name, training_description, 
+                training_type, training_duration, training_provider,
+                group_requirement, training_resources, created_by, 
+                training_contact_name, training_contact_email
+            FROM Trainings
+        """
+        try:
+            self.cursor.execute(query)
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Database Error: {e}")
+            return []
+    
+    def get_employee_training_items(self, employee_id=None):
+        query = """
+            SELECT 
+                ET.employee_id, TR.training_id, ET.required,
+                ET.required_by_date,  ET.completion_status,  ET.completion_date,
+                ET.percentage_completed, ET.assigned_by, ET.approved_by, TR.training_description, TR.training_name
+            FROM Employee_Trainings ET LEFT JOIN Trainings TR
+            ON ET.training_id = TR.training_id
+        """ 
+        if employee_id:
+            query += " WHERE ET.employee_id = ?"
+            
+        try:
+            if employee_id:
+                self.cursor.execute(query, (employee_id,))
+            else:
+                self.cursor.execute(query)
+
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Database Error: {e}")
+            return []
+    
+
+    def get_employee_trainings_by_id(self, training_id):
+        query = """
+            SELECT 
+                ET.employee_id, TR.training_id, ET.required,
+                ET.required_by_date,  ET.completion_status,  ET.completion_date,
+                ET.percentage_completed, ET.assigned_by, ET.approved_by, TR.training_description, TR.training_name
+            FROM Employee_Trainings ET LEFT JOIN Trainings TR
+            ON ET.training_id = TR.training_id
+            WHERE TR.training_id = ?
+        """
+        try:
+            self.cursor.execute(query, (training_id,))
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Database Error: {e}")
+            return []
+
+    def add_training(self, name, desc, t_type, duration, provider, contact_name, contact_email, resources, group, created_by):
+        try:
+            query = """
+                INSERT INTO Trainings (
+                    training_name, training_description, training_type, 
+                    training_duration, training_provider, training_contact_name, 
+                    training_contact_email, training_resources, group_requirement, 
+                    Created_By, Date_Created
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
+            date_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.cursor.execute(query, (
+                name, desc, t_type, duration, provider, 
+                contact_name, contact_email, resources, group, 
+                created_by, date_now
+            ))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error adding training: {e}")
+            return False
+        
+    def add_employee_training(self, employee_id, training_id, required, required_by_date, assigned_by):
+        print(f"Adding employee training: emp_id={employee_id}, training_id={training_id}, required={required}, required_by_date={required_by_date}, assigned_by={assigned_by}")  # Debug statement
+        try:
+            query = """
+                INSERT INTO Employee_Trainings (
+                    employee_id, training_id, required, required_by_date, assigned_by
+                ) VALUES (?, ?, ?, ?, ?)
+            """
+            self.cursor.execute(query, (
+                employee_id, training_id, required, required_by_date, assigned_by
+            ))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error adding employee training: {e}")
+            return False
+            self.cursor.execute(query, (
+                name, desc, t_type, duration, provider, 
+                contact_name, contact_email, resources, group, 
+                created_by, date_now
+            ))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error adding training: {e}")
+            return False
+
+    def update_training(self, t_id, name, desc, t_type, duration, provider, resources, group, updated_by, contact_name, contact_email):
+        try:
+            query = """
+                UPDATE Trainings SET 
+                    training_name = ?, training_description = ?, training_type = ?, 
+                    training_duration = ?, training_provider = ?, training_resources = ?, 
+                    group_requirement = ?, Updated_By = ?, Date_Updated = ?, training_contact_name = ?, training_contact_email = ?
+                WHERE training_id = ?
+            """
+            date_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.cursor.execute(query, (
+                name, desc, t_type, duration, provider, resources, group, 
+                updated_by, date_now, contact_name, contact_email, t_id
+            ))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Update Error: {e}")
+            return False
+        
+    def update_employee_training(self, employee_id, training_id, required, required_by_date, assigned_by):
+        try:
+            query = """
+                UPDATE Employee_Trainings SET 
+                    required = ?, required_by_date = ?, assigned_by = ?
+                WHERE employee_id = ? AND training_id = ?
+            """
+            self.cursor.execute(query, (
+                required, required_by_date, assigned_by, employee_id, training_id
+            ))
             self.conn.commit()
             return True
         except Exception as e:
