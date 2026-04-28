@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import (QLineEdit, QWidget, QVBoxLayout, QHBoxLayout, QLabe
 from PyQt5.QtCore import Qt
 from Employee_Page.employee_profile_page.profile_page import ProfilePage
 from Employee_Page.employee_job_requirements_page.requirements_page import RequirementsPage
+from Employee_Page.employee_trainings_page.trainings_requirements_page import TrainingRequirementsPage
 
 class EmployeeDashboard(QWidget):
     def __init__(self, db, logout_callback):
@@ -76,11 +77,13 @@ class EmployeeDashboard(QWidget):
         # Initialize the separate page objects
         self.profile_screen = ProfilePage(self.db, self)
         self.req_screen = RequirementsPage(self.db, self.current_user)
+        self.training_screen = TrainingRequirementsPage(self.db, self.current_user)
 
         # Add screens to stack
         self.pages.addWidget(QLabel("Home Page Content")) # Index 0
         self.pages.addWidget(self.profile_screen)        # Index 1
         self.pages.addWidget(self.req_screen)            # Index 2
+        self.pages.addWidget(self.training_screen)       # Index 3
 
         # Add the StackedWidget to the CONTENT layout
         self.content_layout.addWidget(self.pages)
@@ -104,6 +107,8 @@ class EmployeeDashboard(QWidget):
 
     def show_trainings(self): 
         self.header_label.setText("Training & Development")
+        self.pages.setCurrentWidget(self.training_screen)
+
         
     def show_leave(self): 
         self.header_label.setText("Leave Planning & Attendance")
@@ -114,5 +119,8 @@ class EmployeeDashboard(QWidget):
 
         self.req_screen.username = username
         self.req_screen.refresh_table_data()
+
+        self.training_screen.username = username
+        self.training_screen.refresh_table_data()
 
         self.header_label.setText(f"Welcome Back, {username}!")

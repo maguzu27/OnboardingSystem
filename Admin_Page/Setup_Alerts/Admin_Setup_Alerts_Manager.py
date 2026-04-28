@@ -109,9 +109,13 @@ class AlertsSetupManager(QWidget):
             self.confirm_delete(row)
 
     def edit_record(self, row):
+        print (f"Editing record at row {row}")
+
         req_id = self.table.item(row, 0).text()
         name = self.table.item(row, 1).text()
         job_id = int(self.table.item(row, 2).text())
+
+
 
         # Open the integrated Master-Detail editor
         dialog = EditAlertFullDialog(self.db, req_id, name, job_id, self)
@@ -125,13 +129,13 @@ class AlertsSetupManager(QWidget):
                 QMessageBox.information(self, "Success", "All changes have been saved.")
 
     def confirm_delete(self, row):
-        req_id = self.table.item(row, 0).text()
+        alert_id = self.table.item(row, 0).text()
         name = self.table.item(row, 1).text()
         
         reply = QMessageBox.question(self, 'Confirm Delete', f"Delete {name}?",
                                    QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.Yes:
-            if self.db.delete_requirement(req_id):
+            if self.db.delete_alert_item(alert_id):
                 self.load_data()
 
 class EditAlertFullDialog(QDialog):

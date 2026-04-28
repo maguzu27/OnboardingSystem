@@ -1133,21 +1133,31 @@ class DatabaseManager:
             print(f"Database Error: {e}")
             return []
     
-    def get_employee_training_items(self, employee_id=None):
+    def get_employee_training_items(self, employee_id=None, training_id=None):
         query = """
             SELECT 
                 ET.employee_id, TR.training_id, ET.required,
                 ET.required_by_date,  ET.completion_status,  ET.completion_date,
-                ET.percentage_completed, ET.assigned_by, ET.approved_by, TR.training_description, TR.training_name
+                ET.percentage_completed, ET.assigned_by, ET.approved_by, TR.training_description, TR.training_name,
+                TR.Training_resources
             FROM Employee_Trainings ET LEFT JOIN Trainings TR
             ON ET.training_id = TR.training_id
         """ 
+
         if employee_id:
             query += " WHERE ET.employee_id = ?"
+        if training_id:
+            query += " WHERE ET.training_id = ?"
+        if training_id and employee_id:
+            query += " WHERE ET.employee_id = ? AND ET.training_id = ?"
             
         try:
-            if employee_id:
+            if employee_id and training_id:
+                self.cursor.execute(query, (employee_id, training_id))
+            elif employee_id:
                 self.cursor.execute(query, (employee_id,))
+            elif training_id:
+                self.cursor.execute(query, (training_id,))
             else:
                 self.cursor.execute(query)
 
@@ -1156,7 +1166,6 @@ class DatabaseManager:
             print(f"Database Error: {e}")
             return []
     
-
     def get_employee_trainings_by_id(self, training_id):
         query = """
             SELECT 
@@ -1258,3 +1267,41 @@ class DatabaseManager:
         except Exception as e:
             print(f"Update Error: {e}")
             return False
+
+    def update_employee_training_status(self, employee_id, training_id, status, completion_date):
+        print(f"Updating training status: emp_id={employee_id}, training_id={training_id}, status={status}, completion_date={completion_date}")  # Debug statement
+        try:
+            query = """
+                UPDATE Employee_Trainings 
+                SET completion_status = ?, completion_date = ?
+                WHERE employee_id = ? AND training_id = ?
+            """
+          
+            self.cursor.execute(query, (status, completion_date, employee_id, training_id))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Update Error: {e}")
+            return False
+        
+
+    def create_leave_planning_table(self):
+        query = """
+        CREATE TABLE IF NOT EXISTS LEAVE_PLANNING (
+            leave_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id INTEGER NOT NULL,
+            leave_type TEXT NOT NULL,
+            leave_start_date TEXT NOT NULL,
+            leave_end_date TEXT NOT NULL,
+            leave_reason TEXT,
+            leave_status TEXT DEFAULT 'Pending',
+            leave_approved_by TEXT,
+            leave_approved_date TEXT,
+            Created_By TEXT,
+            Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            Updated_By TEXT,
+            Date_Updated DATETIME,
+        )
+        """
+        self.cursor.execute(query)
+        self.conn.commit()
