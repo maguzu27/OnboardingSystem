@@ -145,14 +145,6 @@ class LoginWindow(QWidget):
         else:
             QMessageBox.warning(self, "Error", "Invalid Credentials")
 
-
-        # if user == "admin" and pw == "admin123":
-        #     self.on_login_success("admin", user)
-        # elif user != "" and pw == "123":
-        #     self.on_login_success("employee", user)
-        # else:
-        #     QMessageBox.warning(self, "Error", "Invalid credentials!")
-
     def toggle_password_visibility(self):
             if self.password.echoMode() == QLineEdit.Password:
                 self.password.setEchoMode(QLineEdit.Normal)

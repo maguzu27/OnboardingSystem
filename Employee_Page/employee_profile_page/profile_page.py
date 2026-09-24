@@ -7,6 +7,8 @@ class ProfilePage(QWidget):
         super().__init__()
         self.db = db
         self.dashboard = parent_dashboard # Reference to refresh headers/stack
+        self.current_username = None
+        self.employee_id = None
         self.init_ui()
 
     def init_ui(self):
@@ -21,7 +23,7 @@ class ProfilePage(QWidget):
         card_inner_layout = QVBoxLayout(self.info_card)
         
         self.details_label = QLabel("Loading details...")
-        self.details_label.setStyleSheet("font-size: 15px; color: #34495e;")
+        self.details_label.setStyleSheet("font-size: 15px; color: #34495e; line-height: 1.6;")
         card_inner_layout.addWidget(self.details_label)
         
         self.edit_trigger_btn = QPushButton("✎ Edit Professional Details")
@@ -47,7 +49,11 @@ class ProfilePage(QWidget):
             "Gender": QLineEdit(),
             "Address": QLineEdit(),
             "Telephone": QLineEdit(),
-            "Cellphone": QLineEdit()
+            "Cellphone": QLineEdit(),
+            "Education": QLineEdit(),
+            "Supervisor": QLineEdit(),
+            "Job Title": QLineEdit(),
+            "Department": QLineEdit()
         }
 
         for i, (label, widget) in enumerate(self.inputs.items()):
@@ -55,10 +61,11 @@ class ProfilePage(QWidget):
             self.grid.addWidget(widget, i, 1)
 
         save_btn = QPushButton("💾 Save Changes")
-        save_btn.setStyleSheet("background-color: #27ae60; color: white; padding: 10px; font-weight: bold;")
+        save_btn.setStyleSheet("background-color: #27ae60; color: white; padding: 10px; font-weight: bold; border-radius: 5px;")
         save_btn.clicked.connect(self.save_edits)
         
         cancel_btn = QPushButton("Cancel")
+        cancel_btn.setStyleSheet("background-color: #7f8c8d; color: white; padding: 10px; border-radius: 5px;")
         cancel_btn.clicked.connect(self.show_view_mode)
 
         edit_layout.addWidget(form_frame)
@@ -69,30 +76,96 @@ class ProfilePage(QWidget):
         self.layout.addWidget(self.edit_widget)
 
     def refresh_data(self, username):
+        self.current_username = username
         data = self.db.get_employee_by_username(username)
         if data:
-            # Update View Label
-            self.details_label.setText(f"<b>Name:</b> {data[1]}<br><b>Email:</b> {data[7]}")
-            # Pre-fill Edit inputs
-            self.inputs["Nickname"].setText(str(data[4]))
-            self.inputs["Age"].setText(str(data[5]))
-            self.inputs["Gender"].setText(str(data[6]))
-            self.inputs["Address"].setText(str(data[8]))
-            self.inputs["Telephone"].setText(str(data[9]))
-            self.inputs["Cellphone"].setText(str(data[10]))
+            self.employee_id = data[20] if len(data) > 20 else data[0]
+
+            def get_val(idx):
+                return data[idx] if len(data) > idx and data[idx] is not None else ""
+
+            # Combined into a single formatted string (removes the comma syntax error)
+            details_html = (
+                f"<b>Name:</b> {get_val(1)}<br>"
+                f"<b>Email:</b> {get_val(7)}<br><br>"
+                f"<b>Nickname:</b> {get_val(4)}<br>"
+                f"<b>Age:</b> {get_val(5)}<br>"
+                f"<b>Gender:</b> {get_val(6)}<br>"
+                f"<b>Address:</b> {get_val(8)}<br>"
+                f"<b>Telephone:</b> {get_val(9)}<br>"
+                f"<b>Cellphone:</b> {get_val(10)}<br>"
+                f"<b>Education:</b> {get_val(11)}<br>"
+                f"<b>Supervisor:</b> {get_val(13)}<br>"
+                f"<b>Job Title:</b> {get_val(14)}<br>"
+                f"<b>Department:</b> {get_val(16)}"
+            )
+            self.details_label.setText(details_html)
             
-           
+            # Pre-fill Edit inputs
+            self.inputs["Nickname"].setText(str(get_val(4)))
+            self.inputs["Age"].setText(str(get_val(5)))
+            self.inputs["Gender"].setText(str(get_val(6)))
+            self.inputs["Address"].setText(str(get_val(8)))
+            self.inputs["Telephone"].setText(str(get_val(9)))
+            self.inputs["Cellphone"].setText(str(get_val(10)))
+            self.inputs["Education"].setText(str(get_val(11)))
+            self.inputs["Supervisor"].setText(str(get_val(13)))
+            self.inputs["Job Title"].setText(str(get_val(14)))
+            self.inputs["Department"].setText(str(get_val(16)))
+
     def show_edit_mode(self):
         self.view_widget.hide()
         self.edit_widget.show()
-        self.dashboard.header_label.setText("Edit Profile Information")
+        if hasattr(self.dashboard, 'header_label'):
+            self.dashboard.header_label.setText("Edit Profile Information")
 
     def show_view_mode(self):
         self.edit_widget.hide()
         self.view_widget.show()
-        self.dashboard.header_label.setText("My Professional Profile")
+        if hasattr(self.dashboard, 'header_label'):
+            self.dashboard.header_label.setText("My Professional Profile")
 
     def save_edits(self):
-        # Logic to call self.db.update_employee_profile
-        QMessageBox.information(self, "Success", "Profile Updated")
-        self.show_view_mode()
+        if not self.current_username:
+            QMessageBox.warning(self, "Error", "No active user found.")
+            return
+
+        nickname = self.inputs["Nickname"].text().strip()
+        age = self.inputs["Age"].text().strip()
+        gender = self.inputs["Gender"].text().strip()
+        address = self.inputs["Address"].text().strip()
+        telephone = self.inputs["Telephone"].text().strip()
+        cellphone = self.inputs["Cellphone"].text().strip()
+        education = self.inputs["Education"].text().strip()
+        supervisor = self.inputs["Supervisor"].text().strip()
+        job_title = self.inputs["Job Title"].text().strip()
+        department = self.inputs["Department"].text().strip()
+
+        if age and not age.isdigit():
+            QMessageBox.warning(self, "Invalid Input", "Age must be a valid number.")
+            return
+
+        try:
+            success = self.db.update_employee_profile(
+                username=self.current_username,
+                new_nickname=nickname,
+                new_age=int(age) if age else None,
+                new_gender=gender,
+                new_address=address,
+                new_telephone=telephone,
+                new_cellphone=cellphone,
+                new_education=education,
+                new_supervisor=supervisor,
+                new_job_title=job_title,
+                new_department=department
+            )
+
+            if success:
+                QMessageBox.information(self, "Success", "Profile updated successfully!")
+                self.refresh_data(self.current_username)
+                self.show_view_mode()
+            else:
+                QMessageBox.warning(self, "Error", "Failed to update profile. Please try again.")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Database Error", f"An error occurred while saving: {str(e)}")

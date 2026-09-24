@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt
 from Employee_Page.employee_profile_page.profile_page import ProfilePage
 from Employee_Page.employee_job_requirements_page.requirements_page import RequirementsPage
 from Employee_Page.employee_trainings_page.trainings_requirements_page import TrainingRequirementsPage
+from Employee_Page.employee_home_page.summary_home_page import HomePage
 
 class EmployeeDashboard(QWidget):
     def __init__(self, db, logout_callback):
@@ -75,15 +76,16 @@ class EmployeeDashboard(QWidget):
         self.pages = QStackedWidget()
         
         # Initialize the separate page objects
+        self.home_screen = HomePage(self.db, self.current_user) # New Home Screen instance
         self.profile_screen = ProfilePage(self.db, self)
         self.req_screen = RequirementsPage(self.db, self.current_user)
         self.training_screen = TrainingRequirementsPage(self.db, self.current_user)
 
         # Add screens to stack
-        self.pages.addWidget(QLabel("Home Page Content")) # Index 0
-        self.pages.addWidget(self.profile_screen)        # Index 1
-        self.pages.addWidget(self.req_screen)            # Index 2
-        self.pages.addWidget(self.training_screen)       # Index 3
+        self.pages.addWidget(self.home_screen)          # Index 0
+        self.pages.addWidget(self.profile_screen)       # Index 1
+        self.pages.addWidget(self.req_screen)           # Index 2
+        self.pages.addWidget(self.training_screen)      # Index 3
 
         # Add the StackedWidget to the CONTENT layout
         self.content_layout.addWidget(self.pages)
@@ -93,8 +95,9 @@ class EmployeeDashboard(QWidget):
 
     # --- NAVIGATION CALLBACKS ---
     def show_home(self):
-        self.header_label.setText("Welcome Back!")
-        self.pages.setCurrentIndex(0)
+        self.header_label.setText(f"Welcome Back, {self.current_user or ''}!")
+        self.home_screen.refresh_data(self.current_user)
+        self.pages.setCurrentWidget(self.home_screen)
 
     def show_profile(self):
         self.header_label.setText("My Professional Profile")
@@ -115,6 +118,9 @@ class EmployeeDashboard(QWidget):
 
     def load_employee_data(self, username):
         self.current_user = username
+
+        # Refresh all child screen data
+        self.home_screen.refresh_data(username)
         self.profile_screen.refresh_data(username)
 
         self.req_screen.username = username

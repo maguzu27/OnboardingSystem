@@ -272,7 +272,7 @@ class DatabaseManager:
             self.cursor.execute(
                 """Select 
                     emp.Username, emp.First_name, emp.Last_name, emp.Display_name,
-                    emp.Nick_Name, emp.Age, emp.Gender, emp.Email, emp.Address, emp.Telephone, emp.Cellphone, emp.Education,
+                    emp.Nick_Name, emp.Age, emp.Gender, emp.Email, emp.Address, emp.Telephone, emp.Cellphone, emp.  Education,
                     emp.Supervisor_id, supervisor.username Supervisor,
                     emp.Employeement_Status,
                     dept.dept_id, dept.dept_name, dept.dept_description,
@@ -1056,11 +1056,11 @@ class DatabaseManager:
         self.cursor.execute(query)
         self.conn.commit()
 
-    def update_employee_profile(self, username, new_nickname, new_age, new_gender, new_address, new_telephone, new_cellphone, new_education):
-        query = "UPDATE employees SET Nick_Name = ?, Age = ?, Gender = ?, Address = ?, Telephone = ?, Cellphone = ?, Education = ? WHERE Username = ?"
+    def update_employee_profile(self, username, new_nickname, new_age, new_gender, new_address, new_telephone, new_cellphone, new_education, new_supervisor, new_job_title, new_department):
+        query = "UPDATE employees SET Nick_Name = ?, Age = ?, Gender = ?, Address = ?, Telephone = ?, Cellphone = ?, Education = ?, Supervisor_id = ?, Job_title_Id = ?, Dept_ID = ? WHERE Username = ?"
         try:
             # Reusing your existing connection logic
-            self.cursor.execute(query, (new_nickname, new_age, new_gender, new_address, new_telephone, new_cellphone, new_education, username))
+            self.cursor.execute(query, (new_nickname, new_age, new_gender, new_address, new_telephone, new_cellphone, new_education, new_supervisor, new_job_title, new_department, username))
             self.conn.commit()
             return True
         except Exception as e:
