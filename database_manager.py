@@ -23,7 +23,7 @@ class DatabaseManager:
         self.create_account_access_table()
         self.create_training_table()
         self.create_employee_trainings_table()
-
+        self.create_password_resets_table()
 
     def create_employees_table(self):
         query = """
@@ -1301,6 +1301,18 @@ class DatabaseManager:
             Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP,
             Updated_By TEXT,
             Date_Updated DATETIME,
+        )
+        """
+        self.cursor.execute(query)
+        self.conn.commit()
+
+    def create_password_resets_table(self):
+        query = """
+        CREATE TABLE IF NOT EXISTS password_resets (
+            email TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            expiry DATETIME NOT NULL,
+            Date_Created DATETIME DEFAULT CURRENT_TIMESTAMP
         )
         """
         self.cursor.execute(query)

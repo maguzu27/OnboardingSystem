@@ -351,7 +351,7 @@ class AdminManageEmployees(QWidget):
 
         # --- EMAIL CONFIGURATION ---
         sender_email = "magatjohnpaul27@gmail.com"  # Your email
-        sender_password = "wker vixy miag fvas" # Your App Password
+        sender_password = "uyzc rtux idwo cdia" # Your App Password
         smtp_server = "smtp.gmail.com"
         smtp_port = 587
 

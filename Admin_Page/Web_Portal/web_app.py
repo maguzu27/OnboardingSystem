@@ -1,99 +1,58 @@
-import sys
-import os
+import sqlite3
 import datetime
-from tabnanny import check
+import hashlib
 from flask import Flask, request, render_template
-
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-current_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.dirname(os.path.dirname(current_dir))
-sys.path.append(root_dir)
-
-from database_manager import DatabaseManager
+import os
 
 app = Flask(__name__)
-db_path = os.path.join(root_dir, "onboarding.db")
-print(f"--- WEB PORTAL IS USING DATABASE AT: {os.path.abspath(db_path)} ---")
-db = DatabaseManager(db_path)
-# db_path = os.path.join(root_dir, "onboarding.db")
-# db = DatabaseManager(db_path)
 
-def is_expired(expiry_time):
-    return datetime.datetime.now() > datetime.datetime.strptime(expiry_time, "%Y-%m-%d %H:%M:%S")
-
-@app.route('/')
-def home():
-    return "<h1>IT Portal</h1><p>The password reset system is active.</p>"
+# Locate the root onboarding.db file relative to this file
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# If web_app.py is in Admin_Page/Web_Portal, navigate up to the root folder:
+DB_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "onboarding.db"))
 
 @app.route('/set-password/<token>', methods=['GET', 'POST'])
 def set_password_page(token):
-    # breakpoint()
-    query = """
-        SELECT employee_id
-        FROM employee_passwords 
-        WHERE Password_Token = ? AND Token_Expiry > datetime('now') 
-    """
-    result = db.fetch_one(query, (token,))
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+   
+    # 1. Verify token exists and hasn't expired
+    cursor.execute("""
+        SELECT email FROM password_resets 
+        WHERE token = ? AND expiry > datetime('now', 'localtime')
+    """, (token,))
+
+    result = cursor.fetchone()
+
 
     if not result:
-        return "<h1>Link Invalid or Expired</h1><p>Please contact IT support.</p>", 403
+        conn.close()
+        return "<h1>Link Invalid or Expired</h1><p>Please request a new reset link from the app.</p>", 403
 
-    # email = result[0]
-    employee_id = result[0]
-    print(f"Token valid for employee_id: {employee_id}")
+    email = result[0]
 
-    # 3. Handle the form submission
+    # 2. Handle Form Submission (POST)
     if request.method == 'POST':
         new_password = request.form.get('password')
 
-        # check = db.fetch_one("SELECT employee_id FROM employee_passwords WHERE employee_id = ?", (employee_id,))
-  
-        # if check == 0:
-        #     print(f"WARNING: UPDATE affected 0 rows for employee_id={employee_id}. Row may not exist.")
-        #     return "<h1>Error</h1><p>Password could not be saved. Please contact IT support.</p>", 500
-        
-        db.set_employee_password(employee_id, new_password)
-        db.set_employee_password_token(employee_id)  # Clear the token and expiry after use
+        # Hash the password to match your login system (SHA-256)
+        hashed_password = hashlib.sha256(new_password.encode('utf-8')).hexdigest()
 
-   
-     
+        # Update the user's password in the employees table
+        cursor.execute("UPDATE employee_passwords SET Password = ? WHERE employee_id = (SELECT employee_id FROM employees WHERE Email = ?)", (hashed_password, email))
 
-        # db.execute_query("UPDATE employee_passwords SET Password = ? WHERE employee_id = ?", (new_password, employee_id))
+        # Delete the token so it cannot be re-used
+        cursor.execute("DELETE FROM password_resets WHERE token = ?", (token,))
 
-        # db.execute_query("UPDATE employee_passwords SET Password_Token = null WHERE employee_id = ?", (employee_id,))
+        conn.commit()
+        conn.close()
 
+        return "<h1>Success!</h1><p>Your password has been reset. You can now close this tab and log in using your PyQt desktop application.</p>"
 
-        
-        # print(f"Received new password for employee_id {employee_id}: {new_password}")
-
-        # In a real app, you would hash the password here (e.g., using werkzeug.security)
-        
-        # Update the employee's password
-        # db.execute_query("UPDATE employee_passwords SET Password = ? WHERE employee_id = ?", (new_password, employee_id))
-
-        # db.execute_query("UPDATE employee_passwords SET Password_Token = null WHERE employee_id = ?", (employee_id,))
-
-
-
-        # Delete the token so it can't be used again
-        # db.execute_query("DELETE FROM employee_passwords WHERE password_token = ?", (token,))
-        
-        return "<h1>Success!</h1><p>Your password has been set. You can now log in.</p>"
-
-    # 4. Show the actual HTML page
+    # 3. Render the Form (GET)
+    conn.close()
     return render_template('set_password.html')
 
 if __name__ == '__main__':
-    # debug=True allows the server to reload automatically when you save changes
-    app.run(debug=True, port=5001)
-
-    # token = request.args.get('token')
-    
-    # # Check if token exists in SQLite
-    # user = db.query("SELECT * FROM Password_Resets WHERE Token = ?", (token,))
-    
-    # if user and not is_expired(user.expiry):
-    #     # Show the HTML form to the user
-    #     return render_template('password_form.html', token=token)
-    # else:
-    #     return "Link expired or invalid.", 403
+    # Runs the local web server on http://127.0.0.1:5001
+    app.run(host='127.0.0.1', port=5001, debug=True)
