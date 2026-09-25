@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, QTimer, QDateTime, QSize
 import webbrowser
 from PyQt5.QtWidgets import QDialog, QFormLayout
+from Admin_Page.Access_Setup.Security_Access import SecurityAccessManager
 from Admin_Page.Master_Tables_Setup.admin_master_table_manager import MasterTableManager
 from Admin_Page.Job_Requirements.admin_requirements_setup_manager import RequirementsSetupManager
 from Admin_Page.Setup_Alerts.Admin_Setup_Alerts_Manager import AlertsSetupManager
@@ -51,6 +52,7 @@ class AdminHome(QWidget):
             ("Job Requirements", QStyle.SP_FileDialogDetailedView, lambda: self.nav_to_manage(RequirementsSetupManager)),
             ("Alerts", QStyle.SP_MessageBoxWarning, lambda: self.nav_to_manage(AlertsSetupManager)),
             ("Trainings", QStyle.SP_MessageBoxInformation, lambda: self.nav_to_manage(AdminTrainingManagement)),
+            ("Security Access", QStyle.SP_DialogYesButton, lambda: self.nav_to_manage(SecurityAccessManager))
             # ("Alerts", QStyle.SP_MessageBoxWarning, lambda: self.msg("Alerts"))
         ]
 

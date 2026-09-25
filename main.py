@@ -11,6 +11,7 @@ from Admin_Page.Master_Tables_Setup.admin_master_table_manager import MasterTabl
 from Admin_Page.Job_Requirements.admin_requirements_setup_manager import RequirementsSetupManager
 from Admin_Page.Setup_Alerts.Admin_Setup_Alerts_Manager import AlertsSetupManager
 from Admin_Page.Trainings_Setup.Admin_Setup_Trainings import AdminTrainingManagement
+from Admin_Page.Access_Setup.Security_Access import SecurityAccessManager
 
 
 class MainApp(QStackedWidget):
@@ -25,14 +26,14 @@ class MainApp(QStackedWidget):
         """)
 
         self.login_page = LoginWindow(self.db, self.handle_routing)
-        self.admin_home = AdminHome("Admin User", self.go_to_manage_employees, self.show_login)
+        self.admin_home = AdminHome("Admin User", self.go_to_admin_home_page, self.show_login)
         self.admin_manage_page = AdminManageEmployees(self.db, self.logged_in_user, self.go_to_admin_home)
         self.employee_page = EmployeeDashboard(self.db, self.show_login)
         self.master_table_page = MasterTableManager(self.db, self.admin_name, self.go_to_admin_home)
         self.admin_requirements_page = RequirementsSetupManager(self.db, self.admin_name, self.go_to_admin_home)
         self.admin_alerts_page = AlertsSetupManager(self.db, self.admin_name, self.go_to_admin_home)
         self.admin_trainings_page = AdminTrainingManagement(self.db, self.admin_name, self.go_to_admin_home)
-
+        self.admin_security_page = SecurityAccessManager(self.db, self.admin_name, self.go_to_admin_home) 
         
         self.addWidget(self.login_page)       # 0
         self.addWidget(self.admin_home)       # 1
@@ -42,7 +43,7 @@ class MainApp(QStackedWidget):
         self.addWidget(self.admin_requirements_page) #5
         self.addWidget(self.admin_alerts_page) #6
         self.addWidget(self.admin_trainings_page) #7
-        
+        self.addWidget(self.admin_security_page) #8
         self.setWindowTitle("Corporate Onboarding System")
         self.resize(1000, 700)
         self.setCurrentIndex(0)
@@ -57,7 +58,7 @@ class MainApp(QStackedWidget):
             self.employee_page.load_employee_data(username)
             self.setCurrentIndex(3)
 
-    def go_to_manage_employees(self, screen_class=None):
+    def go_to_admin_home_page(self, screen_class=None):
         if screen_class == MasterTableManager:
             self.master_table_page.load_table_data(self.master_table_page.jobs_table, "Jobs")
             self.master_table_page.load_table_data(self.master_table_page.departments_table, "Departments")
@@ -71,6 +72,11 @@ class MainApp(QStackedWidget):
         elif screen_class == AdminTrainingManagement:
             self.admin_trainings_page.refresh_data()
             self.setCurrentIndex(7)
+
+        elif screen_class == SecurityAccessManager:
+            self.admin_security_page.load_data()
+            self.setCurrentIndex(8)
+
         else:
             # Default behavior for "Manage Employees"
             self.admin_manage_page.load_data()

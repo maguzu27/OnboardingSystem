@@ -1,8 +1,8 @@
 
 import sqlite3
 from tkinter.tix import TEXT
-import datetime
 from logger_config import logger
+from datetime import datetime
 
 class DatabaseManager:
     def __init__(self, db_path="onboarding.db"):
