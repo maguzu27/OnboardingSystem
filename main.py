@@ -50,8 +50,7 @@ class MainApp(QStackedWidget):
 
     def handle_routing(self, role, username):
         self.logged_in_user = username
-
-        if role == "admin":
+        if role == "Admin":
             self.admin_home.admin_label.setText(f"Welcome, {username}")
             self.setCurrentIndex(1)
         else:

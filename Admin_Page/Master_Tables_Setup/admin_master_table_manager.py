@@ -39,6 +39,12 @@ class MasterTableManager(QWidget):
         
         self.tabs.addTab(self.create_table_tab("Jobs"), "Job Titles")
         self.tabs.addTab(self.create_table_tab("Departments"), "Departments")
+
+        self.tabs.addTab(self.create_table_tab("Employment_Status"), "Employment Status")
+        self.tabs.addTab(self.create_table_tab("Employment_Type"), "Employment Type")
+        self.tabs.addTab(self.create_table_tab("Education_Level"), "Education Level")
+        self.tabs.addTab(self.create_table_tab("Genders"), "Genders")
+        self.tabs.addTab(self.create_table_tab("Training_Status"), "Training Status")
         self.layout.addWidget(self.tabs)
 
     def create_table_tab(self, table_type):
@@ -73,10 +79,30 @@ class MasterTableManager(QWidget):
         if table_type == "Jobs":
             table.setColumnCount(3)
             table.setHorizontalHeaderLabels(["ID", "Job Title", "Description"])
-        else:
+        elif table_type == "Employment_Status":
+            table.setColumnCount(3)
+            table.setHorizontalHeaderLabels(["ID", "Employment Status", "Description"])
+        elif table_type == "Employment_Type":
+            table.setColumnCount(3)
+            table.setHorizontalHeaderLabels(["ID", "Employment Type", "Description"])
+        elif table_type == "Education_Level":
+            table.setColumnCount(3)
+            table.setHorizontalHeaderLabels(["ID", "Education Level", "Description"])
+        elif table_type == "Genders":
+            table.setColumnCount(3)
+            table.setHorizontalHeaderLabels(["ID", "Gender", "Description"])
+        elif table_type == "Onboarding_Status":
+            table.setColumnCount(3)
+            table.setHorizontalHeaderLabels(["ID", "Onboarding Status", "Description"])
+        elif table_type == "Departments":
             table.setColumnCount(4)
-            table.setHorizontalHeaderLabels(["ID", "Dept Name", "Description", "Address"])
-
+            table.setHorizontalHeaderLabels(["ID", "Department Name", "Description", "Address"])
+        elif table_type == "Training_Status":
+            table.setColumnCount(3)
+            table.setHorizontalHeaderLabels(["ID", "Training Status", "Description"])
+        else:
+            table.setColumnCount(0)  # Default to no columns if unknown type
+            table.setHorizontalHeaderLabels([""])
         layout.addWidget(table)
         self.load_table_data(table, table_type)
         
@@ -246,8 +272,27 @@ class MasterTableManager(QWidget):
             
             if table_type == "Jobs":
                 data = {'title': row_data[1], 'desc': row_data[2], 'admin': self.admin_name}
-            else:
+            elif table_type == "Departments":
                 data = {'name': row_data[1], 'desc': row_data[2], 'address': row_data[3], 'admin': self.admin_name}
+            elif table_type == "Employment_Status":
+                data = {'status': row_data[1], 'desc': row_data[2], 'admin': self.admin_name}
+            elif table_type == "Employment_Type":
+                data = {'type': row_data[1], 'desc': row_data[2], 'admin': self.admin_name}
+            elif table_type == "Education_Level":
+                data = {'level': row_data[1], 'desc': row_data[2], 'admin': self.admin_name}
+            elif table_type == "Genders":
+                data = {'gender': row_data[1], 'desc': row_data[2], 'admin': self.admin_name}
+            elif table_type == "Onboarding_Status":
+                data = {'status': row_data[1], 'desc': row_data[2], 'admin': self.admin_name}
+            elif table_type == "Training_Status":
+                data = {'status': row_data[1], 'desc': row_data[2], 'admin': self.admin_name}
+            else:
+                QMessageBox.warning(self, "Error", f"Unknown table type: {table_type}")
+                return
+
+
+            # else:
+            #     data = {'name': row_data[1], 'desc': row_data[2], 'address': row_data[3], 'admin': self.admin_name}
 
             # Send to DB
             self.db.upsert_master_data(table_type, record_id, data)

@@ -25,11 +25,30 @@ class RecordEntryScreen(QDialog):
         if self.table_type == "Jobs":
             form.addRow("Job Title:", self.name_input)
             form.addRow("Description:", self.desc_input)
-        else:
+        elif self.table_type == "Departments":
             form.addRow("Dept Name:", self.name_input)
             form.addRow("Description:", self.desc_input)
             self.addr_input = QLineEdit()
             form.addRow("Address:", self.addr_input)
+        elif self.table_type == "Employment_Status":
+            form.addRow("Employment Status:", self.name_input)
+            form.addRow("Description:", self.desc_input)
+        elif self.table_type == "Training_Status":
+            form.addRow("Training Status:", self.name_input)
+            form.addRow("Description:", self.desc_input)
+        elif self.table_type == "Employment_Type":
+            form.addRow("Employment Type:", self.name_input)
+            form.addRow("Description:", self.desc_input)
+        elif self.table_type == "Genders":
+            form.addRow("Gender:", self.name_input)
+            form.addRow("Description:", self.desc_input)
+        elif self.table_type == "Education_Level":
+            form.addRow("Education Level:", self.name_input)
+            form.addRow("Description:", self.desc_input)
+        elif self.table_type == "Onboarding_Status":
+            form.addRow("Onboarding Status:", self.name_input)
+            form.addRow("Description:", self.desc_input)
+
 
         layout.addLayout(form)
 
@@ -55,9 +74,24 @@ class RecordEntryScreen(QDialog):
 
         if self.table_type == "Jobs":
             data = {'title': name, 'desc': desc, 'admin': self.admin_name}
-        else:
+        elif self.table_type == "Departments":
             addr = self.addr_input.text().strip()
             data = {'name': name, 'desc': desc, 'address': addr, 'admin': self.admin_name}
+        elif self.table_type == "Training_Status":
+            data = {'status': name, 'desc': desc, 'admin': self.admin_name}
+        elif self.table_type == "Employment_Status":
+            data = {'status': name, 'desc': desc, 'admin': self.admin_name}
+        elif self.table_type == "Employment_Type":
+            data = {'type': name, 'desc': desc, 'admin': self.admin_name}
+        elif self.table_type == "Genders":
+            data = {'gender': name, 'desc': desc, 'admin': self.admin_name}
+        elif self.table_type == "Education_Level":
+            data = {'level': name, 'desc': desc, 'admin': self.admin_name}
+        elif self.table_type == "Onboarding_Status":
+            data = {'status': name, 'desc': desc, 'admin': self.admin_name}
+        else:
+            QMessageBox.warning(self, "Error", f"Unknown table type: {self.table_type}")
+            return
 
         if self.db.upsert_master_data(self.table_type, None, data):
             QMessageBox.information(self, "Success", "Record saved successfully!")

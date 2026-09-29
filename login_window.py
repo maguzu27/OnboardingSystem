@@ -147,8 +147,7 @@ class LoginWindow(QWidget):
         if result:
             role = result[0]      # e.g., 'admin' or 'employee'
             username = result[1]  # e.g., 'JohnDoe'
-
-            self.on_login_success(role.lower(), username)
+            self.on_login_success(role, username)
         else:
             QMessageBox.warning(self, "Error", "Invalid Credentials")
 

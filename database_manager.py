@@ -1,4 +1,5 @@
 
+import hashlib
 import sqlite3
 from tkinter.tix import TEXT
 from logger_config import logger
@@ -24,6 +25,12 @@ class DatabaseManager:
         self.create_training_table()
         self.create_employee_trainings_table()
         self.create_password_resets_table()
+        self.create_onboarding_status_master_table()
+        self.create_genders_master_table()
+        self.create_education_level_master_table()
+        self.create_employment_status_master_table()
+        self.create_employment_type_master_table()
+        self.create_training_status_master_table()
 
     def create_employees_table(self):
         query = """
@@ -112,6 +119,8 @@ class DatabaseManager:
         self.cursor.execute(query)
         self.conn.commit()
 
+    
+
     def create_requirements_setup_table(self):
         query = """
         CREATE TABLE IF NOT EXISTS Requirements_Setup (
@@ -140,8 +149,7 @@ class DatabaseManager:
                     query = """UPDATE Jobs SET job_title=?, job_description=?, Updated_By=?, Date_Updated=? 
                                WHERE job_title_id=?"""
                     self.cursor.execute(query, (data['title'], data['desc'], data['admin'], now, record_id))
-            
-            else: # Departments
+            elif table_type == "Departments": # Departments
                 if record_id is None: # NEW
                     query = """INSERT INTO Departments (dept_name, dept_description, Dept_Address, Created_By, Date_Created) 
                                VALUES (?, ?, ?, ?, ?)"""
@@ -150,7 +158,60 @@ class DatabaseManager:
                     query = """UPDATE Departments SET dept_name=?, dept_description=?, Dept_Address=?, Updated_By=?, Date_Updated=? 
                                WHERE dept_id=?"""
                     self.cursor.execute(query, (data['name'], data['desc'], data['address'], data['admin'], now, record_id))
-            
+            elif table_type == "Training_Status":
+                if record_id is None: # NEW
+                    query = """INSERT INTO Training_Status (training_status_name, training_status_description, Created_By, Date_Created) 
+                               VALUES (?, ?, ?, ?)"""
+                    self.cursor.execute(query, (data['status'], data['desc'], data['admin'], now))
+                else: # EDIT
+                    query = """UPDATE Training_Status SET training_status_name=?, training_status_description=?, Updated_By=?, Date_Updated=? 
+                               WHERE training_status_id=?"""
+                    self.cursor.execute(query, (data['status'], data['desc'], data['admin'], now, record_id))
+            elif table_type == "Employment_Status":
+                if record_id is None: # NEW
+                    query = """INSERT INTO Employment_Status (employment_status_name, employment_status_description, Created_By, Date_Created) 
+                               VALUES (?, ?, ?, ?)"""
+                    self.cursor.execute(query, (data['status'], data['desc'], data['admin'], now))
+                else: # EDIT
+                    query = """UPDATE Employment_Status SET employment_status_name=?, employment_status_description=?, Updated_By=?, Date_Updated=? 
+                               WHERE employment_status_id=?"""
+                    self.cursor.execute(query, (data['status'], data['desc'], data['admin'], now, record_id))
+            elif table_type == "Onboarding_Status":
+                if record_id is None: # NEW
+                    query = """INSERT INTO Onboarding_Status (onboarding_status_name, onboarding_status_description, Created_By, Date_Created) 
+                               VALUES (?, ?, ?, ?)"""
+                    self.cursor.execute(query, (data['status'], data['desc'], data['admin'], now))
+                else: # EDIT
+                    query = """UPDATE Onboarding_Status SET onboarding_status_name=?, onboarding_status_description=?, Updated_By=?, Date_Updated=? 
+                               WHERE onboarding_status_id=?"""
+                    self.cursor.execute(query, (data['status'], data['desc'], data['admin'], now, record_id))
+            elif table_type == "Genders":
+                if record_id is None: # NEW
+                    query = """INSERT INTO Genders (gender_name, gender_description, Created_By, Date_Created) 
+                               VALUES (?, ?, ?, ?)"""
+                    self.cursor.execute(query, (data['gender'], data['desc'], data['admin'], now))
+                else: # EDIT
+                    query = """UPDATE Genders SET gender_name=?, gender_description=?, Updated_By=?, Date_Updated=? 
+                               WHERE gender_id=?"""
+                    self.cursor.execute(query, (data['gender'], data['desc'], data['admin'], now, record_id))
+            elif table_type == "Education_Level":
+                if record_id is None: # NEW
+                    query = """INSERT INTO Education_Level (education_level_name, education_level_description, Created_By, Date_Created) 
+                               VALUES (?, ?, ?, ?)"""
+                    self.cursor.execute(query, (data['level'], data['desc'], data['admin'], now))
+                else: # EDIT
+                    query = """UPDATE Education_Level SET education_level_name=?, education_level_description=?, Updated_By=?, Date_Updated=? 
+                               WHERE education_level_id=?"""
+                    self.cursor.execute(query, (data['level'], data['desc'], data['admin'], now, record_id))
+            elif table_type == "Employment_Type":
+                if record_id is None: # NEW
+                    query = """INSERT INTO Employment_Type (employment_type_name, employment_type_description, Created_By, Date_Created) 
+                               VALUES (?, ?, ?, ?)"""
+                    self.cursor.execute(query, (data['type'], data['desc'], data['admin'], now))
+                else: # EDIT
+                    query = """UPDATE Employment_Type SET employment_type_name=?, employment_type_description=?, Updated_By=?, Date_Updated=? 
+                               WHERE employment_type_id=?"""
+                    self.cursor.execute(query, (data['type'], data['desc'], data['admin'], now, record_id))
             self.conn.commit()
             return True
         except Exception as e:
@@ -314,7 +375,25 @@ class DatabaseManager:
             return None
         
     def get_master_data(self, table_type):
-        table_name = "Jobs" if table_type == "Jobs" else "Departments"
+        table_name = "Jobs" 
+        
+        if table_type == "Jobs":
+            table_name = "Jobs"
+        elif table_type == "Departments":
+            table_name = "Departments"
+        elif table_type == "Training_Status":
+            table_name = "Training_Status"
+        elif table_type == "Employment_Status":
+            table_name = "Employment_Status"
+        elif table_type == "Onboarding_Status":
+            table_name = "Onboarding_Status"
+        elif table_type == "Genders":
+            table_name = "Genders"
+        elif table_type == "Education_Level":
+            table_name = "Education_Level"
+        elif table_type == "Employment_Type":
+            table_name = "Employment_Type"
+
         self.cursor.execute(f"SELECT * FROM {table_name}")
         return self.cursor.fetchall()
     
@@ -1008,37 +1087,27 @@ class DatabaseManager:
 
     def verify_login(self, username, password):
 
+        hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             query = """
-                SELECT COALESCE(a.Role, 'employee'), e.Username
-                FROM employees e
-                LEFT JOIN employee_passwords p ON e.employee_id = p.employee_id
-                LEFT JOIN account_access a ON e.employee_id = a.Employee_id
-                WHERE e.Username = ? AND p.Password = ?
+                Select aa.Role, e.Username
+                from account_access aa 
+                join employees e ON (aa.Employee_id = e.employee_id)
+                join employee_passwords ep ON (ep.employee_id = e.employee_id)
+                where e.Username = ? and ep.Password = ?
             """
+            cursor.execute(query, (username, hashed_password))
 
-            cursor.execute(query, (username, password))
-            result = cursor.fetchone() # This actually gets the data
+            result = cursor.fetchone()
             if result:
-                # result will be something like ('admin', 'magatjo')
                 logger.info(f"Login successful for: {result[1]}")
                 return result 
         
             logger.warning(f"Login failed for: {username}")
 
             return None
-
-        # # Note: In a production app, you would use werkzeug.security.check_password_hash
-
-        # print(f"Executing login query for user: '{username}', query: {query}")  # Debug statement before executing the query
-        # result = self.execute_query(query, (username, password))
-
-        
-        # if result:
-        #     print(f"Login successful for user: {result[0][1]} with role: {result[0][0]}")  # Debug statement
-        #     return result[0]  # Returns e.g., ('admin', 'JohnDoe') or ('employee', 'JaneDoe')
-        # return None
     
     def create_account_access_table(self):
         query = """
@@ -1317,3 +1386,93 @@ class DatabaseManager:
         """
         self.cursor.execute(query)
         self.conn.commit()
+
+    def create_employment_status_master_table(self):
+            query = """
+            CREATE TABLE IF NOT EXISTS Employment_Status (
+                employment_status_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employment_status_name TEXT UNIQUE NOT NULL,
+                employment_status_description TEXT,
+                Created_By TEXT,
+                Date_Created TEXT,
+                Updated_By TEXT,
+                Date_Updated TEXT
+            )
+            """
+            self.cursor.execute(query)
+            self.conn.commit()
+
+    def create_employment_type_master_table(self):
+            query = """
+            CREATE TABLE IF NOT EXISTS Employment_Type (
+                employment_type_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employment_type_name TEXT UNIQUE NOT NULL,
+                employment_type_description TEXT,
+                Created_By TEXT,
+                Date_Created TEXT,
+                Updated_By TEXT,
+                Date_Updated TEXT
+            )
+            """
+            self.cursor.execute(query)
+            self.conn.commit()
+
+    def create_education_level_master_table(self):
+            query = """
+            CREATE TABLE IF NOT EXISTS Education_Level (
+                education_level_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                education_level_name TEXT UNIQUE NOT NULL,
+                education_level_description TEXT,
+                Created_By TEXT,
+                Date_Created TEXT,
+                Updated_By TEXT,
+                Date_Updated TEXT
+            )
+            """
+            self.cursor.execute(query)
+            self.conn.commit()
+
+    def create_genders_master_table(self):
+            query = """
+            CREATE TABLE IF NOT EXISTS Genders (
+                gender_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                gender_name TEXT UNIQUE NOT NULL,
+                gender_description TEXT,
+                Created_By TEXT,
+                Date_Created TEXT,
+                Updated_By TEXT,
+                Date_Updated TEXT
+            )
+            """
+            self.cursor.execute(query)
+            self.conn.commit()
+
+    def create_onboarding_status_master_table(self):
+            query = """
+            CREATE TABLE IF NOT EXISTS Onboarding_Status (
+                onboarding_status_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                onboarding_status_name TEXT UNIQUE NOT NULL,
+                onboarding_status_description TEXT,
+                Created_By TEXT,
+                Date_Created TEXT,
+                Updated_By TEXT,
+                Date_Updated TEXT
+            )
+            """
+            self.cursor.execute(query)
+            self.conn.commit()
+
+    def create_training_status_master_table(self):
+                query = """
+                CREATE TABLE IF NOT EXISTS Training_Status (
+                    training_status_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    training_status_name TEXT UNIQUE NOT NULL,
+                    training_status_description TEXT,
+                    Created_By TEXT,
+                    Date_Created TEXT,
+                    Updated_By TEXT,
+                    Date_Updated TEXT
+                )
+                """
+                self.cursor.execute(query)
+                self.conn.commit()
