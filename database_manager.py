@@ -337,7 +337,9 @@ class DatabaseManager:
                     emp.Supervisor_id, supervisor.username Supervisor,
                     emp.Employeement_Status,
                     dept.dept_id, dept.dept_name, dept.dept_description,
-                    jobs.job_title, jobs.job_description, emp.employee_id
+                    jobs.job_title, jobs.job_description, emp.employee_id,
+                    emp.Date_Created, emp.Date_Updated, emp.Created_By, emp.Updated_By,
+                    emp.Birthday, emp.Employement_Type, emp.Date_Hired
                 from 
 	                employees emp left join departments dept on (emp.dept_id = dept.dept_id)
 	                left join jobs jobs on (jobs.job_title_id = emp.job_title_id)
@@ -633,7 +635,11 @@ class DatabaseManager:
             cursor.execute(sql_emp, list(emp_data.values()))
             new_emp_id = cursor.lastrowid  # Get the ID of the employee we just created
 
-            # 2. Check if a Requirement Group was selected
+            # 2. Add default account access for the new employee
+            cursor.execute("""INSERT INTO account_access 
+            (Role, Employee_id, Created_By, Date_Created) VALUES (?, ?, ?, ?)""", ("Employee", new_emp_id, emp_data.get("Created_By"), datetime.now()))
+
+            # 3. Check if a Requirement Group was selected
             group_name = emp_data.get("Req_Group_Name")
             job_id = emp_data.get("Job_title_Id")
 
@@ -1086,7 +1092,6 @@ class DatabaseManager:
             conn.close()
 
     def verify_login(self, username, password):
-
         hashed_password = hashlib.sha256(password.encode('utf-8')).hexdigest()
 
         with sqlite3.connect(self.db_path) as conn:

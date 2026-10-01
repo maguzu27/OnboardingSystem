@@ -12,8 +12,8 @@ class EmployeeRecordDialog(QDialog):
         self.db = db
         self.inputs = {}
         self.current_admin = current_admin
-        self.employee_id = employee_data[0]   # Employee ID at index 0
-        self.username = employee_data[1]  # Username at index 1
+        self.employee_id = employee_data[20]   # Employee ID at index 0
+        self.username = employee_data[0]  # Username at index 1
         self.file_path = self.db.get_employee_attachment(self.username)
         
         self.setWindowTitle("Employee Management Profile")
@@ -50,17 +50,17 @@ class EmployeeRecordDialog(QDialog):
         header_layout = QHBoxLayout(header)
         
         info_layout = QVBoxLayout()
-        self.name_lbl = QLabel(f"{data[2]} {data[3]}") # First + Last Name
+        self.name_lbl = QLabel(f"{data[1]} {data[2]}") # First + Last Name
         self.name_lbl.setStyleSheet("font-size: 20px; font-weight: bold; color: #2c3e50; border: none;")
-        user_lbl = QLabel(f"@{data[1]} | ID: {data[0]}")
+        user_lbl = QLabel(f"@{data[0]} | ID: {data[20]}")
         user_lbl.setStyleSheet("color: #7f8c8d; border: none;")
         info_layout.addWidget(self.name_lbl)
         info_layout.addWidget(user_lbl)
         
-        status_badge = QLabel(str(data[13]).upper()) # Status
+        status_badge = QLabel(str(data[14]).upper()) #Employment Status
         status_badge.setFixedSize(90, 30)
         status_badge.setAlignment(Qt.AlignCenter)
-        color = "#27ae60" if "active" in str(data[13]).lower() else "#e67e22"
+        color = "#27ae60" if "active" in str(data[14]).lower() else "#e67e22" #Employment Status
         status_badge.setStyleSheet(f"background-color: {color}; color: white; border-radius: 15px; font-weight: bold;")
         
         header_layout.addLayout(info_layout)
@@ -70,25 +70,24 @@ class EmployeeRecordDialog(QDialog):
 
         # --- CATEGORIZED TABS ---
         self.tabs = QTabWidget()
-        
         # Tab 1: Personal Info
         personal_tab = self.create_form_tab([
-            ("First Name", data[2]),  ("Last Name", data[3]), ("Nickname", data[5]), ("Display Name", data[4]),
-            ("Age", data[6]), ("Gender", data[7]), 
-            ("Birthday", data[17]), ("Email", data[8]), ("Cellphone", data[11]),
-            ("Telephone", data[10]), ("Address", data[9])
+            ("First Name", data[1]),  ("Last Name", data[2]), ("Nickname", data[4]), ("Display Name", data[3]),
+            ("Age", data[5]), ("Gender", data[6]), 
+            ("Birthday", data[25]), ("Email", data[7]), ("Cellphone", data[10]),
+            ("Telephone", data[9]), ("Address", data[8])
         ])
         
         # Tab 2: Employment Details
         work_tab = self.create_form_tab([
-            ("Department ID", data[22]), ("Job ID", data[23]), ("Type", data[15]),
-            ("Date Hired", data[16]), ("Supervisor ID", data[12]), ("Hired Status", data[14])
+            ("Department ID", data[15]), ("Job ID", data[18]), ("Type", data[26]),
+            ("Date Hired", data[27]), ("Supervisor ID", data[13]), ("Hired Status", data[14])
         ])
 
         # Tab 3: System Logs
         logs_tab = self.create_form_tab([
-            ("Created By", data[20]), ("Created Date", data[18]),
-            ("Updated By", data[21]), ("Updated Date", data[19])
+            ("Created By", data[23]), ("Created Date", data[21]),
+            ("Updated By", data[24]), ("Updated Date", data[22])
         ])
 
         self.tabs.addTab(personal_tab, "Personal")
@@ -112,15 +111,6 @@ class EmployeeRecordDialog(QDialog):
         self.view_file_btn = QPushButton("View Job Requirements")
         self.view_file_btn.setFixedHeight(40)
         btn_style = "background-color: #3498db; color: white; font-weight: bold; border-radius: 5px; padding: 0 15px;"
-
-
-
-        # if not has_file:
-        #     btn_style = "background-color: #bdc3c7; color: #ffffff; border-radius: 5px;"
-        #     self.view_file_btn.setEnabled(False)
-        #     self.view_file_btn.setText("No Attachment")
-
-            
             
         self.view_file_btn.setStyleSheet(btn_style)
         self.view_file_btn.clicked.connect(self.open_job_requirements_screen)
@@ -189,29 +179,6 @@ class EmployeeRecordDialog(QDialog):
             input_field.setStyleSheet(view_style)
             self.inputs[key] = input_field
             layout.addRow(lbl, input_field)
-
-        # for key, value in fields:
-        #     lbl = QLabel(f"{key}:")
-        #     lbl.setStyleSheet("font-weight: bold; color: #7f8c8d;")
-
-        #     # Use QLineEdit instead of QLabel so it can be toggled
-        #     val_input = QLineEdit(str(value) if value else "")
-        #     val_input.setReadOnly(True) # Start as Read Only
-        #     val_input.setStyleSheet(view_style)
-
-        #     # val = QLabel(str(value) if value else "N/A")
-        #     # val.setStyleSheet("font-size: 14px; color: #2c3e50;")
-            
-
-        #     self.inputs[key] = val_input
-        #     layout.addRow(lbl, val_input)
-            
-            # # Add a thin separator line
-            # line = QFrame()
-            # line.setFrameShape(QFrame.HLine)
-            # line.setFrameShadow(QFrame.Sunken)
-            # line.setStyleSheet("color: #f1f2f6;")
-            # layout.addRow(line)
             
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -225,13 +192,6 @@ class EmployeeRecordDialog(QDialog):
         self.username
         )
         dialog.exec_()
-
-    # def open_file(self):
-    #     if self.file_path:
-    #         try:
-    #             os.startfile(os.path.abspath(self.file_path))
-    #         except Exception as e:
-    #             print(f"Error: {e}")
 
     def set_edit_mode(self, enabled):
         """Toggles the UI appearance between Viewing and Editing for all widget types"""
@@ -299,9 +259,6 @@ class EmployeeRecordDialog(QDialog):
         else:
             QMessageBox.warning(self, "Error", "Failed to save changes.")
 
-        
-
-
     def handle_action(self, index):
             """Processes the selection from the action dropdown"""
             if index == 0: return
@@ -315,7 +272,6 @@ class EmployeeRecordDialog(QDialog):
             
             elif index == 2:  # "Delete Record" selected
                 self.confirm_delete()
-
 
             self.action_dropdown.blockSignals(True)
             self.action_dropdown.setCurrentIndex(0)
@@ -354,13 +310,13 @@ class EmployeeRecordDialog(QDialog):
             # 3. Update all input fields in the tabs
             # This uses the same mapping logic we used in create_form_tab
             mapping = {
-                "Nickname": fresh_data[5], "Age": fresh_data[6], "Gender": fresh_data[7], 
-                "Birthday": fresh_data[17], "Email": fresh_data[8], "Cellphone": fresh_data[11],
-                "Telephone": fresh_data[10], "Address": fresh_data[9],
-                "Type": fresh_data[15], "Date Hired": fresh_data[16], "Hired Status": fresh_data[14],
-                "Department ID": fresh_data[22], "Job ID": fresh_data[23], "Supervisor ID": fresh_data[12],
-                "Created By": fresh_data[20], "Created Date": fresh_data[18], "Updated By": fresh_data[21], "Updated Date": fresh_data[19],
-                "First Name": fresh_data[2], "Last Name": fresh_data[3], "Display Name": fresh_data[4]
+                "Nickname": fresh_data[4], "Age": fresh_data[5], "Gender": fresh_data[6], 
+                "Birthday": fresh_data[25], "Email": fresh_data[7], "Cellphone": fresh_data[10],
+                "Telephone": fresh_data[9], "Address": fresh_data[8],
+                "Type": fresh_data[26], "Date Hired": fresh_data[27], "Hired Status": fresh_data[14],
+                "Department ID": fresh_data[15], "Job ID": fresh_data[18], "Supervisor ID": fresh_data[13],
+                "Created By": fresh_data[23], "Created Date": fresh_data[21], "Updated By": fresh_data[24], "Updated Date": fresh_data[22],
+                "First Name": fresh_data[1], "Last Name": fresh_data[2], "Display Name": fresh_data[3]
             }
 
             for key, val in mapping.items():

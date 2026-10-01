@@ -38,9 +38,17 @@ def set_password_page(token):
         # Hash the password to match your login system (SHA-256)
         hashed_password = hashlib.sha256(new_password.encode('utf-8')).hexdigest()
 
-        # Update the user's password in the employees table
-        cursor.execute("UPDATE employee_passwords SET Password = ? WHERE employee_id = (SELECT employee_id FROM employees WHERE Email = ?)", (hashed_password, email))
+        #check if existing user
+        result = cursor.execute("SELECT 1 FROM employee_passwords ep WHERE ep.employee_id = (SELECT employee_id FROM employees e WHERE e.Email = ?)", (email,)).fetchone()
+        emp_id = cursor.execute("SELECT employee_id FROM employees WHERE Email = ?", (email,)).fetchone()
 
+        if result:
+            # Update the user's password in the employees table
+            cursor.execute("UPDATE employee_passwords SET Password = ? WHERE employee_id = ?", (hashed_password, emp_id[0]))
+        else:
+            # Add new password for user
+            cursor.execute("INSERT INTO employee_passwords (employee_id, Password, Date_Created) VALUES (?, ?, datetime('now', 'localtime'))", (emp_id[0], hashed_password))
+            
         # Delete the token so it cannot be re-used
         cursor.execute("DELETE FROM password_resets WHERE token = ?", (token,))
 

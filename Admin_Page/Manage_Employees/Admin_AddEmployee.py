@@ -234,24 +234,23 @@ class AddEmployeeDialog(QDialog):
         full_employee_data.update(user_input)
         return full_employee_data
 
-    def generate_onboarding_token(self, email, username):
-        """Generates a secure token and saves it to the Password_Resets table."""
-        token = secrets.token_urlsafe(32)
-        # Set expiry for 24 hours from now
-        expiry = datetime.datetime.now() + datetime.timedelta(hours=24)
-        # Find employee_id by email
-       
+    # def generate_onboarding_token(self, email, username):
+    #     """Generates a secure token and saves it to the Password_Resets table."""
+    #     token = secrets.token_urlsafe(32)
+    #     # Set expiry for 24 hours from now
+    #     expiry = datetime.datetime.now() + datetime.timedelta(hours=24)
+    #     # Find employee_id by email
         
-        # Save to database (Assuming your DB class has a save_reset_token method)
-        # If not, you can call self.db.execute directly if accessible
-        try:
-            self.db.save_password_token(token, email, username, expiry)
-            # Replace this with your actual PythonAnywhere or Azure URL
-            base_url = "http://127.0.0.1:5001/set-password"
-            return f"{base_url}/{token}"
-        except Exception as e:
-            print(f"Error saving token: {e}")
-            return None
+    #     # Save to database (Assuming your DB class has a save_reset_token method)
+    #     # If not, you can call self.db.execute directly if accessible
+    #     try:
+    #         self.db.save_password_token(token, email, username, expiry)
+    #         # Replace this with your actual PythonAnywhere or Azure URL
+    #         base_url = "http://127.0.0.1:5001/set-password"
+    #         return f"{base_url}/{token}"
+    #     except Exception as e:
+    #         print(f"Error saving token: {e}")
+    #         return None
         
     def handle_save(self):
         """Overrides the dialog accept to process data before closing."""

@@ -1,4 +1,4 @@
-import token
+from tkinter import dialog
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -15,6 +15,7 @@ from PyQt5.QtCore import Qt
 
 from Admin_Page.Manage_Employees.Admin_AddEmployee import AddEmployeeDialog
 from Admin_Page.Manage_Employees.Admin_OpenEmployee_Record import EmployeeRecordDialog
+from Utilities.Helper import HelperClass
 
 
 class BulkEditDialog(QDialog):
@@ -286,13 +287,23 @@ class AdminManageEmployees(QWidget):
             
             # Email is at index 8 in the database result
             email_address = str(r_data[8]) 
-            send_btn.clicked.connect(lambda ch, em=email_address: self.send_email_trigger(em))
+            username = str(r_data[1])  # Assuming username is at index 1
+            send_btn.clicked.connect(lambda ch, em=email_address, un=username: self.send_welcome_email(em, un))
             
             self.table.setCellWidget(r_idx, 13, send_btn) 
 
         # Re-apply filter in case user was currently searching when reloading
         if hasattr(self, 'search_input') and self.search_input.text():
             self.filter_table()
+
+    def send_welcome_email(self, email, username):
+        link = HelperClass(db=self.db).generate_onboarding_token(email=email, username=username)
+        result = self.send_email_trigger(email, link)
+
+        if result:
+            QMessageBox.information(self, "Email Sent", f"Welcome email sent to {email}.")
+        else:
+            QMessageBox.critical(self, "Email Error", f"Failed to send email to {email}.")
 
     def open_add_employee_screen(self):
         dialog = AddEmployeeDialog(self.db, self)
@@ -306,7 +317,8 @@ class AdminManageEmployees(QWidget):
             success = self.db.add_employee_with_requirements(employee_data)
 
             if success:
-                link = dialog.generate_onboarding_token(employee_data["Email"], employee_data["Username"])
+                link = HelperClass(db=self.db).generate_onboarding_token(email=employee_data["Email"], username=employee_data["Username"])
+
                 self.load_data()
 
                 self.send_email_trigger(employee_data["Email"], link)
@@ -462,7 +474,8 @@ class AdminManageEmployees(QWidget):
     def open_employee_record(self, row):
         admin_name = self.current_user
         # We stored the full database tuple in the first item's UserRole
-        full_data = self.table.item(row, 0).data(Qt.UserRole)
+        data = self.table.item(row, 0).data(Qt.UserRole)
+        full_data = self.db.get_employee_by_username(data[1])  # Fetch fresh data from DB
 
         dialog = EmployeeRecordDialog(full_data, self.db, admin_name, self )
         if dialog.exec_() == QDialog.Accepted:
